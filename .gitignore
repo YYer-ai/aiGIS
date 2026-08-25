@@ -1,0 +1,18 @@
+# 环境与密钥
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# 数据与工具（体积大，不入库）
+data/
+tools/*.zip
+
+# 编辑器
+.vscode/
+.idea/
