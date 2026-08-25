@@ -615,7 +615,7 @@ def validate(sql: str, allowed_tables: set[str]) -> tuple[bool, str]:
 
 ```yaml
 - question: 三环内绿化覆盖率最高的五个区县
-  sql: SELECT b.name, round(SUM(ST_Area(ST_Intersection(g.geom,b.geom)::geography)) / ST_Area(b.geom::geography) * 100, 2) AS green_rate_pct, ST_AsGeoJSON(b.geom) AS geometry FROM osm_boundaries b JOIN osm_areas g ON ST_Intersects(g.geom,b.geom) AND (g.leisure IN ('park','garden') OR g.landuse IN ('grass','forest','meadow') OR g.natural='wood') JOIN ring_areas r ON r.ring_name='三环' AND ST_Contains(r.geom, ST_Centroid(b.geom)) WHERE b.admin_level=6 GROUP BY b.name, b.geom ORDER BY green_rate_pct DESC LIMIT 5
+  sql: SELECT b.name, round((SUM(ST_Area(ST_Intersection(g.geom,b.geom)::geography)) / ST_Area(b.geom::geography) * 100)::numeric, 2) AS green_rate_pct, ST_AsGeoJSON(b.geom) AS geometry FROM osm_boundaries b JOIN osm_areas g ON ST_Intersects(g.geom,b.geom) AND (g.leisure IN ('park','garden') OR g.landuse IN ('grass','forest','meadow') OR g.natural='wood') JOIN ring_areas r ON r.ring_name='三环' AND ST_Contains(r.geom, ST_Centroid(b.geom)) WHERE b.admin_level=6 GROUP BY b.name, b.geom ORDER BY green_rate_pct DESC LIMIT 5
 ```
 
 - [ ] **Step 2: 写失败测试**
