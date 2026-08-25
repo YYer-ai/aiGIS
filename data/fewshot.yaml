@@ -1,0 +1,52 @@
+# 空间函数 few-shot 库：中文问题 → PostGIS SQL（供 SYSTEM_TEMPLATE 注入）
+# 约束：仅五表（osm_pois/osm_roads/osm_areas/osm_boundaries/ring_areas）、单条 SELECT、
+# 几何输出用 ST_AsGeoJSON(geom) AS geometry（计数类除外）、面积/距离用 geography 强转。
+# 回归保障：tests/test_prompt.py 会用 validator 校验本文件全部 SQL。
+
+# --- ST_Contains 环内过滤 x3 ---
+- question: 三环内有多少个公园
+  sql: "SELECT count(*) FROM osm_areas a JOIN ring_areas r ON r.ring_name='三环' WHERE ST_Contains(r.geom, a.geom) AND a.leisure='park'"
+- question: 四环内有哪些医院
+  sql: "SELECT name, ST_AsGeoJSON(geom) AS geometry FROM osm_pois p JOIN ring_areas r ON r.ring_name='四环' WHERE ST_Contains(r.geom, p.geom) AND p.amenity='hospital'"
+- question: 二环内的咖啡馆
+  sql: "SELECT name, ST_AsGeoJSON(p.geom) AS geometry FROM osm_pois p JOIN ring_areas r ON r.ring_name='二环' WHERE ST_Contains(r.geom, p.geom) AND p.amenity='cafe'"
+
+# --- ST_DWithin 距离 x2 ---
+- question: 距天安门广场1公里内的餐厅
+  sql: "SELECT name, ST_AsGeoJSON(geom) AS geometry FROM osm_pois WHERE amenity='restaurant' AND ST_DWithin(geom::geography, (SELECT geom FROM osm_pois WHERE name LIKE '%天安门广场%'), 1000)"
+- question: 颐和园2公里内的酒店
+  sql: "SELECT name, ST_AsGeoJSON(geom) AS geometry FROM osm_pois WHERE tourism='hotel' AND ST_DWithin(geom::geography, (SELECT geom FROM osm_areas WHERE name LIKE '%颐和园%'), 2000)"
+
+# --- LIKE 地名模糊 x2 ---
+- question: 名字包含"海淀"的行政区
+  sql: "SELECT name, ST_AsGeoJSON(geom) AS geometry FROM osm_boundaries WHERE name LIKE '%海淀%'"
+- question: 名称包含"中关村"的餐厅
+  sql: "SELECT name, ST_AsGeoJSON(geom) AS geometry FROM osm_pois WHERE amenity='restaurant' AND name LIKE '%中关村%'"
+
+# --- ST_Area 排序 x2 ---
+- question: 五环内面积最大的三个公园
+  sql: "SELECT name, ST_AsGeoJSON(a.geom) AS geometry FROM osm_areas a JOIN ring_areas r ON r.ring_name='五环' WHERE ST_Contains(r.geom,a.geom) AND a.leisure='park' ORDER BY ST_Area(a.geom::geography) DESC LIMIT 3"
+- question: 全市面积最大的五个公园
+  sql: "SELECT name, ST_Area(geom::geography) AS area_sqm, ST_AsGeoJSON(geom) AS geometry FROM osm_areas WHERE leisure='park' ORDER BY ST_Area(geom::geography) DESC LIMIT 5"
+
+# --- admin_level 行政区 x2（6=区县，8=街道/乡镇）---
+- question: 北京所有的区县
+  sql: "SELECT name, ST_AsGeoJSON(geom) AS geometry FROM osm_boundaries WHERE admin_level=6 ORDER BY name"
+- question: 海淀区下辖的街道
+  sql: "SELECT c.name, ST_AsGeoJSON(c.geom) AS geometry FROM osm_boundaries c JOIN osm_boundaries h ON h.name='海淀区' AND h.admin_level=6 WHERE c.admin_level=8 AND ST_Contains(h.geom, c.geom)"
+
+# --- 绿化覆盖率计算 x1 ---
+- question: 三环内绿化覆盖率最高的五个区县
+  sql: "SELECT b.name, round(SUM(ST_Area(ST_Intersection(g.geom,b.geom)::geography)) / ST_Area(b.geom::geography) * 100, 2) AS green_rate_pct, ST_AsGeoJSON(b.geom) AS geometry FROM osm_boundaries b JOIN osm_areas g ON ST_Intersects(g.geom,b.geom) AND (g.leisure IN ('park','garden') OR g.landuse IN ('grass','forest','meadow') OR g.natural='wood') JOIN ring_areas r ON r.ring_name='三环' AND ST_Contains(r.geom, ST_Centroid(b.geom)) WHERE b.admin_level=6 GROUP BY b.name, b.geom ORDER BY green_rate_pct DESC LIMIT 5"
+
+# --- ST_Buffer 缓冲 x1 ---
+- question: 天坛公园周边500米范围
+  sql: "SELECT name, ST_AsGeoJSON(ST_Buffer(geom::geography, 500)::geometry) AS geometry FROM osm_areas WHERE leisure='park' AND name LIKE '%天坛%'"
+
+# --- 最近邻 x1 ---
+- question: 距离故宫最近的10家餐厅
+  sql: "SELECT p.name, ST_Distance(p.geom::geography, t.geom::geography) AS dist_m, ST_AsGeoJSON(p.geom) AS geometry FROM osm_pois p, osm_pois t WHERE t.name LIKE '%故宫%' AND p.amenity='restaurant' ORDER BY ST_Distance(p.geom::geography, t.geom::geography) ASC LIMIT 10"
+
+# --- 按类别计数聚合 x1 ---
+- question: 三环内各类设施的数量统计
+  sql: "SELECT amenity, count(*) AS cnt FROM osm_pois p JOIN ring_areas r ON r.ring_name='三环' WHERE ST_Contains(r.geom, p.geom) AND amenity IS NOT NULL GROUP BY amenity ORDER BY cnt DESC"

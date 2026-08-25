@@ -10,7 +10,8 @@ __pycache__/
 node_modules/
 
 # 数据与工具（体积大，不入库）
-data/
+data/*
+!data/fewshot.yaml
 tools/*.zip
 
 # 编辑器
