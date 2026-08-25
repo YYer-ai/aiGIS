@@ -1,5 +1,6 @@
 """从 PostGIS 导出全量 schema 上下文（表/列结构 + 中文 COMMENT + 每表样本值），供 LLM prompt 注入。"""
 import psycopg
+from psycopg import sql
 
 DEFAULT_TABLES = ["osm_pois", "osm_roads", "osm_areas", "osm_boundaries", "ring_areas"]
 
@@ -34,10 +35,15 @@ def export_schema(conn_info: str, tables: list[str] | None = None) -> str:
             # 样本值排除几何列：WKB 十六进制对 LLM 无信息量，徒增 token
             sample_cols = [name for name, typ, _ in cols if not typ.startswith("geometry")]
             if sample_cols:
-                col_list = ", ".join(f'"{c}"' for c in sample_cols)
                 try:
-                    # f-string 安全：t 来自白名单常量，列名来自系统目录，均非用户输入
-                    cur.execute(f"SELECT {col_list} FROM {t} LIMIT 3")
+                    # 表名 t 来自 DEFAULT_TABLES 白名单、列名来自系统目录，均非用户输入；
+                    # 仍统一走 psycopg sql.Identifier 官方组装，杜绝 f-string 拼接 SQL
+                    cur.execute(
+                        sql.SQL("SELECT {} FROM {} LIMIT 3").format(
+                            sql.SQL(", ").join(sql.Identifier(c) for c in sample_cols),
+                            sql.Identifier(t),
+                        )
+                    )
                     for sample in cur.fetchall():
                         parts.append("  SAMPLE: " + repr(sample)[:300])
                 except psycopg.Error:

@@ -27,16 +27,23 @@ TOLERANCES = (0.0003, 0.0006, 0.0012, 0.003, 0.008)
 MIN_AREA_KM2 = 20.0  # 低于此面积的洞视为立交小圈/碎片，不算成环
 
 
-def build_ring_sql(ring_keyword: str) -> str:
-    """收集某环全部线段的 SQL（单行 ST_Collect，供 TEMP 表 t_ring 使用）。"""
-    refs = RING_DEFS[ring_keyword]["refs"]
-    ref_clause = f" OR ref IN ({','.join(repr(r) for r in refs)})" if refs else ""
-    return (
+def build_ring_sql(ring_keyword: str) -> tuple[str, list]:
+    """收集某环全部线段的 INSERT 语句与绑定参数（单行 ST_Collect，供 TEMP 表 t_ring 使用）。
+
+    ring_keyword 必须来自 RING_DEFS 白名单；环名正则、噪音词正则、refs
+    一律经 %s 参数绑定传入，不拼入 SQL 文本（防注入）。
+    """
+    if ring_keyword not in RING_DEFS:
+        raise ValueError(f"未知环路 {ring_keyword!r}，白名单: {sorted(RING_DEFS)}")
+    refs = list(RING_DEFS[ring_keyword]["refs"])
+    stmt = (
+        "INSERT INTO t_ring "
         "SELECT ST_Collect(geom) AS g FROM osm_roads "
-        f"WHERE (name ~ '^[东西南北]?{ring_keyword}' "
-        f"AND name !~ '{NAME_NOISE}' "
-        f"AND highway IN ('motorway','trunk','primary','secondary','tertiary'){ref_clause})"
+        "WHERE (name ~ %s AND name !~ %s "
+        "AND highway IN ('motorway','trunk','primary','secondary','tertiary') "
+        "OR ref = ANY(%s))"
     )
+    return stmt, [f"^[东西南北]?{ring_keyword}", NAME_NOISE, refs]
 
 
 # 从 t_ring 提取最大内洞：参数为 buffer 容差（度）。
@@ -73,7 +80,11 @@ def main(conn_info: str):
         cur.execute(CREATE_SQL)
         for ring, cfg in RING_DEFS.items():
             cur.execute("DROP TABLE IF EXISTS t_ring;")
-            cur.execute(f"CREATE TEMP TABLE t_ring AS {build_ring_sql(ring)}")
+            # CREATE TABLE AS 属 utility 语句、协议层不能绑定参数，
+            # 故先建 TEMP 表结构（ST_Collect 产出 geometry 列），再用参数化 INSERT 收集线集
+            cur.execute("CREATE TEMP TABLE t_ring (g geometry)")
+            ring_sql, ring_params = build_ring_sql(ring)
+            cur.execute(ring_sql, ring_params)
             done = False
             for tol in TOLERANCES:
                 cur.execute(HOLE_SQL, (tol,))
