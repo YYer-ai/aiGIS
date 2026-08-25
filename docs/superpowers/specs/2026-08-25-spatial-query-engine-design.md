@@ -18,8 +18,7 @@
 
 | 决策点 | 选择 | 理由 |
 |---|---|---|
-| 主力 LLM | DeepSeek API | 代码能力强、价格低、OpenAI 兼容 SDK |
-| 离线备份 LLM | Ollama + qwen2.5-coder:7b（约 4.7GB） | 断网时开发不断档，CPU 可推理 |
+| 主力 LLM | DeepSeek API | 代码能力强、价格低、OpenAI 兼容 SDK（用户裁决 2026-08-25：不用本地 Ollama，直接接 API） |
 | schema 上下文 | 全量 schema 注入 prompt | Phase 1 仅 5-6 张表（4 张 OSM 表 + ring_areas 等），零 RAG 依赖；后续表多再升级向量库 |
 | 测试数据城市 | 北京 | README 示例场景（"三环内"），pbf 约 150MB |
 | OSM 导入模式 | osm2pgsql flex（自定义 lua） | 列名语义化 + 中文 COMMENT，LLM 可直接读懂 |
@@ -87,11 +86,9 @@
 - 引用的表必须存在于 schema 白名单；拒绝多语句（`;` 分隔的第二条语句）。
 - 兜底：执行一律走 `aigis_readonly` 只读账号（已验证 CREATE 被拒）。
 
-### 4.3 LLM Provider 抽象
+### 4.3 LLM Provider
 
-- 统一 OpenAI 兼容接口；`.env` 中 `LLM_PROVIDER=deepseek|ollama` 一键切换。
-- DeepSeek：`https://api.deepseek.com`，模型 `deepseek-chat`。
-- Ollama：`http://localhost:11434/v1`，模型 `qwen2.5-coder:7b`（准备阶段预下载）。
+- DeepSeek 官方 API：`https://api.deepseek.com`，模型 `deepseek-chat`，OpenAI 兼容 SDK 直连（后续换厂商只需改 base_url/model 配置）。
 - 网络/超时异常：清晰报错并自动重试 1 次。
 
 ## 5. CLI 与评估
@@ -112,9 +109,8 @@
 | PostGIS 镜像 + 容器 | ✅ 已拉取（postgis/postgis:16-3.5） |
 | osm2pgsql 2.3.1 便携版 | ✅ 已在 tools/ |
 | 北京 pbf 数据 | ⬜ 准备阶段下载至 data/（一次性） |
-| Ollama + qwen2.5-coder:7b | ⬜ 准备阶段安装/下载（一次性） |
 | Python 依赖 | ✅ uv 本地缓存（.venv） |
-| 需联网环节 | 仅 DeepSeek API；断网切 Ollama |
+| 需联网环节 | 仅 DeepSeek API（用户已接受此网络依赖） |
 
 ## 8. 风险与对策
 

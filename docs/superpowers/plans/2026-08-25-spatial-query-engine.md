@@ -4,7 +4,7 @@
 
 **Goal:** 构建中文自然语言 → 空间 SQL → PostGIS 只读执行 → GeoJSON 的命令行引擎，50 题准确率 ≥80%。
 
-**Architecture:** 单 Python 包 `src/aigis`（9 个单一职责模块），数据管道独立脚本（osm2pgsql flex 导入 + 环路预处理）。LLM 层 Provider 抽象（DeepSeek 主力 / Ollama 离线备份）。SQL 安全 = sqlglot 校验白名单 + `aigis_readonly` 只读账号双保险，执行错误回喂 LLM 自修复（≤3 次）。
+**Architecture:** 单 Python 包 `src/aigis`（9 个单一职责模块），数据管道独立脚本（osm2pgsql flex 导入 + 环路预处理）。LLM 层为 OpenAI 兼容 Provider（DeepSeek API 直连，用户裁决不用本地 Ollama）。SQL 安全 = sqlglot 校验白名单 + `aigis_readonly` 只读账号双保险，执行错误回喂 LLM 自修复（≤3 次）。
 
 **Tech Stack:** Python 3.12（uv 托管）、psycopg 3、sqlglot、openai SDK、typer、pytest；PostGIS 16-3.5（Docker，已就绪）；osm2pgsql 2.3.1（tools/，已就绪）。
 
@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - DB 连接：host=localhost port=5432 dbname=aigis；引擎执行账号 `aigis_readonly/aigis_readonly`，管理账号 `aigis/aigis_dev_2026`（来自 `.env`）。
-- LLM：`LLM_PROVIDER=deepseek|ollama`；DeepSeek `https://api.deepseek.com` + `deepseek-chat`；Ollama `http://localhost:11434/v1` + `qwen2.5-coder:7b`。
+- LLM：DeepSeek API（`https://api.deepseek.com` + `deepseek-chat`，`.env` 配 `DEEPSEEK_API_KEY`；用户裁决不用本地 Ollama）。
 - SQL 校验：仅单条 SELECT（含 CTE/UNION），表白名单，函数黑名单 `pg_sleep/pg_read_file/pg_ls_dir/pg_read_binary_file/lo_import/lo_export`，禁止 COPY。
 - 几何输出约定：LLM 生成 SQL 必须用 `ST_AsGeoJSON(geom) AS geometry` 列输出几何。
 - 提交信息一律中文；测试框架 pytest；每任务一提交。
@@ -87,7 +87,7 @@ git add -A && git commit -m "chore: 项目骨架与 Phase 1 依赖"
 - Create: `data/`（保存 beijing pbf）
 
 **Interfaces:**
-- Produces: `data/beijing-latest.osm.pbf`（约 150MB）；本机 Ollama 服务 + `qwen2.5-coder:7b` 模型。
+- Produces: `data/beijing-latest.osm.pbf`（约 150MB）。
 
 - [ ] **Step 1: 下载北京 pbf**
 
@@ -101,29 +101,17 @@ curl -L -o "E:/aiGIS/data/beijing-latest.osm.pbf" "https://download.bbbike.org/o
 验证：`ls -la E:/aiGIS/data/`，文件 >50MB 且非 HTML（`head -c 4` 应为二进制 pbf 魔数）。
 若 BBBike 失败，fallback：下载 geofabrik `asia/china-latest.osm.pbf`（约 1GB）后用 osm2pgsql 边界过滤导入（`--bbox 115.4 39.4 117.5 41.1`）。
 
-- [ ] **Step 2: 安装 Ollama 并拉模型**
-
-```bash
-winget install --id Ollama.Ollama --accept-package-agreements --accept-source-agreements
-# 安装后 Ollama 服务自启，然后：
-ollama pull qwen2.5-coder:7b   # 约 4.7GB，一次性下载
-ollama list
-```
-
-验证：`ollama list` 显示 `qwen2.5-coder:7b`。
-
-- [ ] **Step 3: .env 追加 LLM 配置**
+- [ ] **Step 2: .env 追加 LLM 配置**
 
 ```env
-LLM_PROVIDER=deepseek
 DEEPSEEK_API_KEY=<用户填入>
 ```
 
-- [ ] **Step 4: 提交（data/ 与 .env 均被 gitignore 忽略，只提交确认）**
+- [ ] **Step 3: 提交（data/ 与 .env 均被 gitignore 忽略，只提交确认）**
 
 ```bash
 git status --short   # 确认 data/、.env 未被跟踪
-git commit --allow-empty -m "chore: 本地资源准备完成（北京pbf + Ollama模型）"
+git commit --allow-empty -m "chore: 本地资源准备完成（北京pbf）"
 ```
 
 ---
@@ -149,13 +137,13 @@ def test_defaults():
     assert c.db_host == "localhost" and c.db_port == 5432 and c.db_name == "aigis"
     assert c.db_user == "aigis_readonly"      # 引擎执行账号
     assert c.admin_user == "aigis"             # 管理账号（schema 导出/预处理）
-    assert c.llm_provider in ("deepseek", "ollama")
+    assert c.deepseek_model == "deepseek-chat"
 
 def test_load_env(tmp_path: Path):
     f = tmp_path / ".env"
-    f.write_text("LLM_PROVIDER=ollama\nDEEPSEEK_API_KEY=sk-test\n", encoding="utf-8")
+    f.write_text("DEEPSEEK_API_KEY=sk-test\n", encoding="utf-8")
     c = load_config(str(f))
-    assert c.llm_provider == "ollama" and c.deepseek_api_key == "sk-test"
+    assert c.deepseek_api_key == "sk-test"
 ```
 
 - [ ] **Step 2: 跑测试确认失败** — `uv run pytest tests/test_config.py -v` → ImportError
@@ -177,12 +165,9 @@ class Config:
     db_password: str = "aigis_readonly"
     admin_user: str = "aigis"             # 导出 schema / 预处理
     admin_password: str = "aigis_dev_2026"
-    llm_provider: str = "deepseek"
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-chat"
-    ollama_base_url: str = "http://localhost:11434/v1"
-    ollama_model: str = "qwen2.5-coder:7b"
 
 def load_config(env_file: str | None = None) -> Config:
     load_dotenv(env_file)
@@ -190,7 +175,6 @@ def load_config(env_file: str | None = None) -> Config:
         db_host=os.getenv("POSTGRES_HOST", "localhost"),
         db_port=int(os.getenv("POSTGRES_PORT", "5432")),
         db_name=os.getenv("POSTGRES_DB", "aigis"),
-        llm_provider=os.getenv("LLM_PROVIDER", "deepseek"),
         deepseek_api_key=os.getenv("DEEPSEEK_API_KEY", ""),
     )
 ```
@@ -706,7 +690,7 @@ def build_messages(question: str, schema_text: str) -> list[dict]:
 
 ```python
 # tests/test_llm.py
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 import pytest
 from aigis.config import Config
 from aigis.llm import OpenAICompatProvider, make_provider, LLMError
@@ -726,15 +710,12 @@ def test_retry_once_on_timeout():
     assert p.generate("s", "u") == "ok"
 
 def test_make_provider_by_cfg():
-    cfg = Config(llm_provider="ollama")
-    p = make_provider(cfg)
-    assert p.model == "qwen2.5-coder:7b"
-    cfg2 = Config(llm_provider="deepseek", deepseek_api_key="sk-1")
-    assert make_provider(cfg2).model == "deepseek-chat"
+    p = make_provider(Config(deepseek_api_key="sk-1"))
+    assert p.model == "deepseek-chat"
 
 def test_missing_key_raises():
     with pytest.raises(LLMError):
-        make_provider(Config(llm_provider="deepseek", deepseek_api_key=""))
+        make_provider(Config(deepseek_api_key=""))
 ```
 
 - [ ] **Step 2: 跑测试失败 → Step 3: 实现**
@@ -765,15 +746,13 @@ class OpenAICompatProvider:
                 return resp.choices[0].message.content
             except (APITimeoutError, APIConnectionError):
                 if attempt == 2:
-                    raise LLMError("LLM 服务连接失败（已重试一次），请检查网络或切换 LLM_PROVIDER=ollama")
+                    raise LLMError("DeepSeek API 连接失败（已重试一次），请检查网络与 DEEPSEEK_API_KEY")
                 time.sleep(2)
 
 def make_provider(cfg: Config) -> LLMProvider:
-    if cfg.llm_provider == "deepseek":
-        if not cfg.deepseek_api_key:
-            raise LLMError("缺少 DEEPSEEK_API_KEY，请在 .env 配置")
-        return OpenAICompatProvider(cfg.deepseek_base_url, cfg.deepseek_api_key, cfg.deepseek_model)
-    return OpenAICompatProvider(cfg.ollama_base_url, "ollama", cfg.ollama_model)
+    if not cfg.deepseek_api_key:
+        raise LLMError("缺少 DEEPSEEK_API_KEY，请在 .env 配置")
+    return OpenAICompatProvider(cfg.deepseek_base_url, cfg.deepseek_api_key, cfg.deepseek_model)
 ```
 
 - [ ] **Step 4: 全绿；Step 5: 提交** — `git commit -m "feat: LLM Provider 抽象（DeepSeek/Ollama 一键切换+重试）"`
