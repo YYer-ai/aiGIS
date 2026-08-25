@@ -12,6 +12,11 @@ DANGEROUS_FUNCS = {
     "lo_export",
     "dblink",
     "pg_terminate_backend",
+    # F2（审查裁定扩容）：会话层 GUC/锁/序列类
+    "set_config",
+    "setval",
+    "reset",
+    "pg_advisory_lock",
 }
 
 
@@ -21,6 +26,8 @@ def validate(sql: str, allowed_tables: set[str]) -> tuple[bool, str]:
     返回 (True, "") 表示通过；否则返回 (False, 中文原因)。
     """
     sql = sql.strip()
+    # 表名比较统一小写（PG unquoted 标识符折叠为小写，大小写白名单等价）
+    allowed_tables = {t.lower() for t in allowed_tables}
     try:
         statements = [s for s in sqlglot.parse(sql, read="postgres") if s is not None]
     except sqlglot.errors.ParseError as e:
@@ -31,14 +38,15 @@ def validate(sql: str, allowed_tables: set[str]) -> tuple[bool, str]:
     if not isinstance(stmt, (exp.Select, exp.Union)):
         return False, f"非查询语句：解析结果为 {type(stmt).__name__}，仅允许 SELECT/UNION 查询"
     # CTE 名是对本地子查询的引用，不算物理表
-    cte_names = {c.alias for c in stmt.find_all(exp.CTE)}
+    cte_names = {c.alias.lower() for c in stmt.find_all(exp.CTE)}
     for t in stmt.find_all(exp.Table):
-        if t.name not in allowed_tables and t.name not in cte_names:
+        if t.name.lower() not in allowed_tables and t.name.lower() not in cte_names:
             return False, f"表 {t.name} 不在表白名单"
     for f in stmt.find_all(exp.Func):
-        # 具名函数（如 COUNT）用 sql_name()，匿名函数（如 pg_sleep、ST_AsGeoJSON）用 this
+        # 具名函数（如 COUNT）用 sql_name()；匿名函数（如 pg_sleep、ST_AsGeoJSON）
+        # 用 f.name 统一取裸名——裸名/引号包裹/schema 前缀三种形态一致，防 quoted 绕过（F1）
         if isinstance(f, exp.Anonymous):
-            name = str(f.this).lower()
+            name = f.name.lower()
         else:
             name = (f.sql_name() or "").lower()
         if name in DANGEROUS_FUNCS:
