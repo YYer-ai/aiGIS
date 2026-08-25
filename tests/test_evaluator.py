@@ -65,3 +65,12 @@ def test_run_eval_in_range_count_vs_rows(monkeypatch):
     rep = run_eval(questions, Config(), progress=False)
     got = {r["id"]: r["in_range"] for r in rep["results"]}
     assert got == {1: True, 2: False, 3: True}
+
+
+def test_run_eval_in_range_non_numeric_cell(monkeypatch):
+    """单行单列返回文本值（如 '12.3 平方公里'）：不抛异常，in_range=None（无法粗检）。"""
+    outs = {"面积多少": Outcome(question="面积多少", ok=True, attempts=1, rows=[("12.3 平方公里",)])}
+    monkeypatch.setattr("aigis.evaluator.run_query", _make_run_query(outs))
+    questions = [{"id": 1, "question": "面积多少", "expect_rows_range": [10, 100]}]
+    rep = run_eval(questions, Config(), progress=False)  # 修复前此处 TypeError
+    assert rep["results"][0]["in_range"] is None

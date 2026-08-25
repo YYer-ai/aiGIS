@@ -15,7 +15,8 @@ def run_eval(questions: list[dict], cfg, progress: bool = True) -> dict:
     """逐题跑 run_query 并汇总统计。
 
     in_range：结果数值/行数落在 expect_rows_range 内（数量级粗检，仅 ok 且有行时计算；
-    单行单列（count 类）取值本身，否则取行数）。
+    单行单列（count 类）取值本身，否则取行数；取值非数值（如带单位文本）时记 None，
+    表示无法粗检）。
     """
     results, repaired = [], 0
     for q in questions:
@@ -26,7 +27,7 @@ def run_eval(questions: list[dict], cfg, progress: bool = True) -> dict:
         if out.ok and q.get("expect_rows_range") and out.rows:
             lo, hi = q["expect_rows_range"]
             n = out.rows[0][0] if len(out.rows) == 1 and len(out.rows[0]) == 1 else len(out.rows)
-            in_range = lo <= n <= hi
+            in_range = lo <= n <= hi if isinstance(n, (int, float)) else None
         results.append({"id": q["id"], "question": q["question"], "ok": out.ok,
                         "attempts": out.attempts, "sql": out.sql,
                         "rows": len(out.rows), "in_range": in_range,
