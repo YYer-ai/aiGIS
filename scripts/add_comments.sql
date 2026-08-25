@@ -3,8 +3,8 @@
 -- 注：natural 是 SQL 保留字，列引用须加双引号。
 
 -- ============ osm_pois 兴趣点 ============
-COMMENT ON TABLE osm_pois IS '兴趣点（点）：餐饮/购物/景点等 amenity/shop/tourism 节点';
-COMMENT ON COLUMN osm_pois.osm_id IS 'OSM 要素 ID（节点 ID，配合 osm_type 定位唯一要素）';
+COMMENT ON TABLE osm_pois IS '兴趣点（点）：餐饮/购物/景点等 amenity/shop/tourism；来源=节点本身 或 带 POI 标签的建筑物轮廓/面（way/relation）的质心';
+COMMENT ON COLUMN osm_pois.osm_id IS 'OSM 要素 ID（node/way/relation 的 ID，配合 osm_type 定位唯一要素；面质心 POI 复用其来源 way/relation 的 ID）';
 COMMENT ON COLUMN osm_pois.osm_type IS 'OSM 要素类型：N=节点 node, W=路径 way, R=关系 relation';
 COMMENT ON COLUMN osm_pois.name IS '名称（取 OSM name 标签，北京数据多为中文名）';
 COMMENT ON COLUMN osm_pois.amenity IS '设施类型：restaurant=餐厅, cafe=咖啡厅, fast_food=快餐, bank=银行, school=学校, hospital=医院, pharmacy=药房, parking=停车场, toilet=公厕 等';
