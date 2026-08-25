@@ -1,7 +1,7 @@
 # src/aigis/llm.py
 import time
 from typing import Protocol
-from openai import OpenAI, APITimeoutError, APIConnectionError
+from openai import OpenAI, APITimeoutError, APIConnectionError, APIStatusError
 from aigis.config import Config
 
 
@@ -27,6 +27,10 @@ class OpenAICompatProvider:
                     messages=[{"role": "system", "content": system},
                               {"role": "user", "content": user}])
                 return resp.choices[0].message.content
+            except APIStatusError as e:  # 401/402 等状态错误重试无意义，直接面向用户报错
+                raise LLMError(
+                    f"DeepSeek API 返回错误 {e.status_code}：{e.message}"
+                    "——请检查 key 与账户余额")
             # openai 3.x 的 APITimeoutError 不继承内建 TimeoutError，需一并捕获
             except (APITimeoutError, APIConnectionError, TimeoutError):
                 if attempt == 2:
