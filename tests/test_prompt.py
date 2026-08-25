@@ -2,7 +2,7 @@
 import pytest
 
 from aigis.config import Config
-from aigis.executor import explain_readonly
+from aigis.executor import execute_readonly
 from aigis.prompt import build_messages, load_fewshot
 from aigis.schema_export import DEFAULT_TABLES
 from aigis.validator import validate
@@ -28,10 +28,13 @@ def test_fewshot_sql_passes_validator(shot):
     assert ok, f"few-shot [{shot['question']}] 不合规: {reason}"
 
 
-# few-shot 真库 EXPLAIN 回归（审查 F1–F3 教训）：validator 只查表白名单/单条语句/危险函数，
-# 对列歧义（F1）、函数类型不存在（F2）完全失明；EXPLAIN 只做解析/规划不执行，
-# 零成本拦截这两类编译期错误（F3 子查询多行系运行期错误，由锚点子查询 LIMIT 1 模板约定防复发）
+# few-shot 真库回归（审查 F1–F3 教训）：validator 只查表白名单/单条语句/危险函数，
+# 对列歧义（F1）、函数类型不存在（F2）完全失明；从 EXPLAIN 升级为直接执行——
+# EXPLAIN 系 utility 语句无法参数绑定主体，任何拼接形态都会被安全扫描静态规则命中，
+# 而真执行比 EXPLAIN 验证更彻底（顺带抓 F3 类运行期错误）；
+# 安全性由 validator 白名单 + 只读账号 + statement_timeout 三层兜底
 @pytest.mark.integration
 @pytest.mark.parametrize("shot", load_fewshot(), ids=lambda s: s["question"][:20])
-def test_fewshot_sql_explains_on_real_db(shot):
-    assert explain_readonly(shot["sql"], Config()), f"few-shot [{shot['question']}] EXPLAIN 失败"
+def test_fewshot_sql_executes_on_real_db(shot):
+    r = execute_readonly(shot["sql"], Config())
+    assert r.ok, f"few-shot [{shot['question']}] 执行失败: {r.error}"
