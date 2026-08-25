@@ -1,9 +1,12 @@
 # tests/test_prompt.py
+import psycopg
 import pytest
 
 from aigis.prompt import build_messages, load_fewshot
 from aigis.schema_export import DEFAULT_TABLES
 from aigis.validator import validate
+
+READONLY = "host=localhost port=5432 dbname=aigis user=aigis_readonly password=aigis_readonly"
 
 
 def test_load_fewshot_default():
@@ -24,3 +27,14 @@ def test_build_messages():
 def test_fewshot_sql_passes_validator(shot):
     ok, reason = validate(shot["sql"], set(DEFAULT_TABLES))
     assert ok, f"few-shot [{shot['question']}] 不合规: {reason}"
+
+
+# few-shot 真库 EXPLAIN 回归（审查 F1–F3 教训）：validator 只查表白名单/单条语句/危险函数，
+# 对列歧义（F1）、函数类型不存在（F2）完全失明；EXPLAIN 只做解析/规划不执行，
+# 零成本拦截这两类编译期错误（F3 子查询多行系运行期错误，由锚点子查询 LIMIT 1 模板约定防复发）
+@pytest.mark.integration
+@pytest.mark.parametrize("shot", load_fewshot(), ids=lambda s: s["question"][:20])
+def test_fewshot_sql_explains_on_real_db(shot):
+    with psycopg.connect(READONLY) as conn, conn.cursor() as cur:
+        cur.execute("EXPLAIN " + shot["sql"])
+        assert cur.fetchone() is not None

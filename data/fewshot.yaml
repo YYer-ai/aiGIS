@@ -7,15 +7,15 @@
 - question: 三环内有多少个公园
   sql: "SELECT count(*) FROM osm_areas a JOIN ring_areas r ON r.ring_name='三环' WHERE ST_Contains(r.geom, a.geom) AND a.leisure='park'"
 - question: 四环内有哪些医院
-  sql: "SELECT name, ST_AsGeoJSON(geom) AS geometry FROM osm_pois p JOIN ring_areas r ON r.ring_name='四环' WHERE ST_Contains(r.geom, p.geom) AND p.amenity='hospital'"
+  sql: "SELECT name, ST_AsGeoJSON(p.geom) AS geometry FROM osm_pois p JOIN ring_areas r ON r.ring_name='四环' WHERE ST_Contains(r.geom, p.geom) AND p.amenity='hospital'"
 - question: 二环内的咖啡馆
   sql: "SELECT name, ST_AsGeoJSON(p.geom) AS geometry FROM osm_pois p JOIN ring_areas r ON r.ring_name='二环' WHERE ST_Contains(r.geom, p.geom) AND p.amenity='cafe'"
 
 # --- ST_DWithin 距离 x2 ---
 - question: 距天安门广场1公里内的餐厅
-  sql: "SELECT name, ST_AsGeoJSON(geom) AS geometry FROM osm_pois WHERE amenity='restaurant' AND ST_DWithin(geom::geography, (SELECT geom FROM osm_pois WHERE name LIKE '%天安门广场%'), 1000)"
+  sql: "SELECT name, ST_AsGeoJSON(geom) AS geometry FROM osm_pois WHERE amenity='restaurant' AND ST_DWithin(geom::geography, (SELECT geom FROM osm_pois WHERE name LIKE '%天安门广场%' ORDER BY osm_id LIMIT 1), 1000)"
 - question: 颐和园2公里内的酒店
-  sql: "SELECT name, ST_AsGeoJSON(geom) AS geometry FROM osm_pois WHERE tourism='hotel' AND ST_DWithin(geom::geography, (SELECT geom FROM osm_areas WHERE name LIKE '%颐和园%'), 2000)"
+  sql: "SELECT name, ST_AsGeoJSON(geom) AS geometry FROM osm_pois WHERE tourism='hotel' AND ST_DWithin(geom::geography, (SELECT geom FROM osm_areas WHERE name LIKE '%颐和园%' ORDER BY osm_id LIMIT 1), 2000)"
 
 # --- LIKE 地名模糊 x2 ---
 - question: 名字包含"海淀"的行政区
@@ -37,7 +37,7 @@
 
 # --- 绿化覆盖率计算 x1 ---
 - question: 三环内绿化覆盖率最高的五个区县
-  sql: "SELECT b.name, round(SUM(ST_Area(ST_Intersection(g.geom,b.geom)::geography)) / ST_Area(b.geom::geography) * 100, 2) AS green_rate_pct, ST_AsGeoJSON(b.geom) AS geometry FROM osm_boundaries b JOIN osm_areas g ON ST_Intersects(g.geom,b.geom) AND (g.leisure IN ('park','garden') OR g.landuse IN ('grass','forest','meadow') OR g.natural='wood') JOIN ring_areas r ON r.ring_name='三环' AND ST_Contains(r.geom, ST_Centroid(b.geom)) WHERE b.admin_level=6 GROUP BY b.name, b.geom ORDER BY green_rate_pct DESC LIMIT 5"
+  sql: "SELECT b.name, round((SUM(ST_Area(ST_Intersection(g.geom,b.geom)::geography)) / ST_Area(b.geom::geography) * 100)::numeric, 2) AS green_rate_pct, ST_AsGeoJSON(b.geom) AS geometry FROM osm_boundaries b JOIN osm_areas g ON ST_Intersects(g.geom,b.geom) AND (g.leisure IN ('park','garden') OR g.landuse IN ('grass','forest','meadow') OR g.natural='wood') JOIN ring_areas r ON r.ring_name='三环' AND ST_Contains(r.geom, ST_Centroid(b.geom)) WHERE b.admin_level=6 GROUP BY b.name, b.geom ORDER BY green_rate_pct DESC LIMIT 5"
 
 # --- ST_Buffer 缓冲 x1 ---
 - question: 天坛公园周边500米范围
