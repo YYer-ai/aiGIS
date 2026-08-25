@@ -1,13 +1,11 @@
 # tests/test_prompt.py
-import psycopg
-from psycopg import sql
 import pytest
 
+from aigis.config import Config
+from aigis.executor import explain_readonly
 from aigis.prompt import build_messages, load_fewshot
 from aigis.schema_export import DEFAULT_TABLES
 from aigis.validator import validate
-
-READONLY = "host=localhost port=5432 dbname=aigis user=aigis_readonly password=aigis_readonly"
 
 
 def test_load_fewshot_default():
@@ -36,8 +34,4 @@ def test_fewshot_sql_passes_validator(shot):
 @pytest.mark.integration
 @pytest.mark.parametrize("shot", load_fewshot(), ids=lambda s: s["question"][:20])
 def test_fewshot_sql_explains_on_real_db(shot):
-    with psycopg.connect(READONLY) as conn, conn.cursor() as cur:
-        # fewshot 来自仓库内静态 YAML 常量（与 schema_export.py 同性质），走 psycopg 官方
-        # sql.SQL 组装 API 声明可信字面量，杜绝 f-string/加号拼接 SQL 的静态告警
-        cur.execute(sql.SQL("EXPLAIN {}").format(sql.SQL(shot["sql"])))
-        assert cur.fetchone() is not None
+    assert explain_readonly(shot["sql"], Config()), f"few-shot [{shot['question']}] EXPLAIN 失败"
