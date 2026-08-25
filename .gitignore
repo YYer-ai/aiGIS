@@ -16,3 +16,6 @@ tools/*.zip
 # 编辑器
 .vscode/
 .idea/
+
+# 输出产物
+out/
