@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "mimosa-finding-history/v1",
+  "runId": "20260826T163919923Z-19452-f0e69d3341c6",
+  "runStatus": "inconclusive",
+  "errors": [
+    "baseline-read:web/package-lock.json: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:web/package.json: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:web/vite.config.js: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:web/src/api.js: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:web/src/App.jsx: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:web/src/ChatPanel.jsx: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:web/src/main.jsx: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:web/src/MapPanel.jsx: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:tests/test_web.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:src/aigis_web/app.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:src/aigis_web/schemas.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:src/aigis_web/__init__.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "supply-chain-check:.: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+  ],
+  "target": ".",
+  "revision": "26adb439a1c3dd0428d1da800f176c40cd7d255e",
+  "diffHash": "f3829ecbb5a0fba7376c4e7266b160a9f7410d1163fd94cc955de423e7e1ea48",
+  "rulesVersion": "unavailable",
+  "recordedAt": "2026-08-26T16:39:19.923Z",
+  "timing": {
+    "startedAt": "2026-08-26T16:39:17.119Z",
+    "completedAt": "2026-08-26T16:39:19.923Z",
+    "durationMs": 2804
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "modelCalls": 0,
+    "measurement": "known-zero"
+  },
+  "findings": {
+    "total": 0,
+    "bySeverity": {},
+    "byStatus": {}
+  },
+  "coverage": {
+    "status": "partial",
+    "reasonCounts": {
+      "baseline_snapshot_unreadable": 12,
+      "project_check_failed": 13
+    }
+  },
+  "evidenceBoundary": "static_only",
+  "immutableReport": ".mimosa/reports/task-review-sess_d6ff6ff6-ddd0-4327-b58d-41bf88209dce-20260826T163919923Z-19452-f0e69d3341c6.json"
+}

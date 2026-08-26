@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "mimosa-finding-history/v1",
+  "runId": "20260826T131113295Z-27440-88af914caa5a",
+  "runStatus": "inconclusive",
+  "errors": [
+    "baseline-read:tests/test_cli.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "scan:tests/test_cli.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_config.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_evaluator.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_geojson_out.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_llm.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_repair.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_validator.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/cli.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/config.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/evaluator.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/validator.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+  ],
+  "target": ".",
+  "revision": "a3d6cdb2a281b314f7d2606fcde7d58b4baf9375",
+  "diffHash": "c356a93b4194eb5cd5c894fa37455d6152d0c7274aa81d5f71d86d2cfa923be9",
+  "rulesVersion": "unavailable",
+  "recordedAt": "2026-08-26T13:11:13.295Z",
+  "timing": {
+    "startedAt": "2026-08-26T13:11:09.975Z",
+    "completedAt": "2026-08-26T13:11:13.295Z",
+    "durationMs": 3320
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "modelCalls": 0,
+    "measurement": "known-zero"
+  },
+  "findings": {
+    "total": 0,
+    "bySeverity": {},
+    "byStatus": {}
+  },
+  "coverage": {
+    "status": "partial",
+    "reasonCounts": {
+      "baseline_snapshot_unreadable": 1,
+      "scanner_failed": 11,
+      "project_check_failed": 12
+    }
+  },
+  "evidenceBoundary": "static_only",
+  "immutableReport": ".mimosa/reports/task-review-sess_d6ff6ff6-ddd0-4327-b58d-41bf88209dce-20260826T131113295Z-27440-88af914caa5a.json"
+}

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "mimosa-finding-ledger-batch/v1",
+  "batchId": "stop-20260826T114518579Z-14152-00f9c28ee0b7",
+  "runId": "20260826T114518579Z-14152-00f9c28ee0b7",
+  "runStatus": "completed",
+  "coverage": {
+    "status": "complete",
+    "reasons": []
+  },
+  "source": {
+    "component": "zcode-hook",
+    "operationId": "Stop"
+  },
+  "revision": "ba5308b4498b1dba02e6d178c7203af5fce81191",
+  "diffHash": "173bf40f1ac853c95cd55743364df00ae2371f8c9fcecfba2fe706365eba7dd4",
+  "rulesVersion": "unavailable",
+  "sessionHash": "5d9cfc570efd36b8703aa8bf5eef0e1f3694286e985bbe2fd3893befde7bc283",
+  "reportRef": ".mimosa/reports/task-review-sess_d6ff6ff6-ddd0-4327-b58d-41bf88209dce-20260826T114518579Z-14152-00f9c28ee0b7.json",
+  "events": [],
+  "observedFindingIds": [],
+  "verifiedFiles": [
+    {
+      "file": "tests/test_config.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "tests/test_evaluator.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "tests/test_llm.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/aigis/config.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/aigis/evaluator.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/aigis/llm.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    }
+  ],
+  "recordedAt": "2026-08-26T11:45:19.247Z"
+}

@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "mimosa-finding-history/v1",
+  "runId": "20260825T143252133Z-25288-13ad505f3a0b",
+  "runStatus": "inconclusive",
+  "errors": [
+    "candidate-select:src/aigis/validator.py: candidate_limit_exceeded: 2 changed reviewable file(s) were not scanned because the limit is 20",
+    "baseline-read:tests/conftest.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:tests/test_config.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:tests/test_evaluator.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:tests/test_executor.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:tests/test_geojson_out.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:tests/test_llm.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:tests/test_prep_rings.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:tests/test_prompt.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:tests/test_repair.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:tests/test_schema_export.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:tests/test_validator.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:src/aigis/cli.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:src/aigis/config.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:src/aigis/evaluator.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:src/aigis/executor.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:src/aigis/geojson_out.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:src/aigis/llm.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:src/aigis/prompt.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:src/aigis/repair.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "baseline-read:src/aigis/schema_export.py: baseline_snapshot_unreadable: file is missing from task baseline",
+    "scan:tests/conftest.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_config.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_evaluator.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_executor.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_geojson_out.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_llm.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_prep_rings.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_prompt.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_repair.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_schema_export.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_validator.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/cli.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/config.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/evaluator.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/executor.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/geojson_out.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/llm.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/prompt.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/repair.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/schema_export.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+  ],
+  "target": ".",
+  "revision": "3760d3e71ef2d13459de4c63eae7e570401bd237",
+  "diffHash": "3c2819ffe16a2979574cc8f41b6cc63b8c69fa307b82af733a85090c54f63cdf",
+  "rulesVersion": "unavailable",
+  "recordedAt": "2026-08-25T14:32:52.133Z",
+  "timing": {
+    "startedAt": "2026-08-25T14:32:48.973Z",
+    "completedAt": "2026-08-25T14:32:52.133Z",
+    "durationMs": 3160
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "modelCalls": 0,
+    "measurement": "known-zero"
+  },
+  "findings": {
+    "total": 0,
+    "bySeverity": {},
+    "byStatus": {}
+  },
+  "coverage": {
+    "status": "partial",
+    "reasonCounts": {
+      "candidate_limit_exceeded": 1,
+      "baseline_snapshot_unreadable": 20,
+      "scanner_failed": 20,
+      "project_check_failed": 41
+    }
+  },
+  "evidenceBoundary": "static_only",
+  "immutableReport": ".mimosa/reports/task-review-sess_d6ff6ff6-ddd0-4327-b58d-41bf88209dce-20260825T143252133Z-25288-13ad505f3a0b.json"
+}
