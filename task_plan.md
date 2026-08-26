@@ -45,3 +45,11 @@
 | 4 条 few-shot SQL 真库报错 | 1 | 别名/numeric强转/LIMIT1 + 15条EXPLAIN回归 |
 | Mimosa 拦截 f-string SQL（2处 high） | 1 | 参数化/Identifier 组装 |
 | DeepSeek 402 余额不足 | 等待 | 用户充值后继续 Task 15 |
+
+## 2026-08-26 收尾（自主模式）
+
+- Web 操作台合并 main（103→106 passed）；browser-use 真实 UI 验收全过
+- 优化轮：锚点 COALESCE 回退 few-shot + Decimal 粗检；题12标注订正
+- 复评：50/50 执行成功、准确率 96%（48/50，错题2个系数据裁剪）
+- Phase 3 裁剪版验证：缓冲区/环外扩/叠加 3 条指令 1 次生成全通
+- 项目背景设定（README 愿景）达成：查询+操作+Web 平台全链路可用
