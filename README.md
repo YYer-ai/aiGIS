@@ -100,6 +100,13 @@ Agent 层做意图路由，两类能力走同一个循环：
 4. 提问：`uv run aigis "三环内有多少个公园"`
 5. 评估：`uv run aigis-eval`
 
+### Web 操作台
+
+双栏网页版：左栏中文提问（展示 SQL / 推理过程 / 行数），右栏 MapLibre 地图自动叠加查询结果图层，支持图层显隐、删除与视角适配（最多保留最近 10 层）。
+
+- **开发模式**：先起后端 `uv run uvicorn aigis_web.app:app --port 8000`，再起前端 `cd web && npm run dev`，访问 <http://localhost:5173>（`/api` 自动代理到 8000）。
+- **生产模式**：`cd web && npm run build` 后仅起 uvicorn（同上命令），访问 <http://localhost:8000>（FastAPI 直接托管 `web/dist`）。
+
 ## 六、演进路线（不摊大饼）
 
 | 阶段 | 内容 | 预估 | 验收标准 |

@@ -53,7 +53,7 @@ export default function ChatPanel({ onResult }) {
       setLoading(false);
     }
     setMessages((m) => [...m, { role: "assistant", text: "", res }]);
-    if (res.ok && onResult) onResult(res);
+    if (res.ok && onResult) onResult(res, question);
   }
 
   return (
