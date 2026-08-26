@@ -22,6 +22,10 @@ def create_app() -> FastAPI:
         except LLMError as e:
             return JSONResponse(status_code=502, content=QueryResponse(error=str(e)).model_dump())
         except psycopg.OperationalError as e:
+            # QueryCanceled(57014, statement_timeout) 继承 OperationalError，先于连接失败文案区分
+            if getattr(e, "sqlstate", None) == "57014":
+                return JSONResponse(status_code=502,
+                    content=QueryResponse(error="查询超时（15秒限制），请缩小查询范围或简化条件").model_dump())
             return JSONResponse(status_code=502,
                 content=QueryResponse(error=f"数据库连接失败，请确认 aigis-postgis 容器在运行：{e}").model_dump())
         return QueryResponse(sql=out.sql, reasoning=out.reasoning, attempts=out.attempts,

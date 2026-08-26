@@ -184,6 +184,9 @@ export default function MapPanel({ layers = [], onToggle, onRemove }) {
             </div>
           ))
         )}
+        {layers.length >= 10 && (
+          <div className="layer-cap">已达 10 层上限，最早的图层已被移除</div>
+        )}
       </div>
     </div>
   );

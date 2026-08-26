@@ -266,3 +266,10 @@ html, body, #root {
   font-size: 13px;
   color: #9aa0ac;
 }
+
+.layer-cap {
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #6b7280;
+  text-align: center;
+}

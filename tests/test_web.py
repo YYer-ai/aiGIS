@@ -30,6 +30,14 @@ def test_query_db_error_502():
         r = c.post("/api/query", json={"question": "x"})
         assert r.status_code == 502 and "数据库" in r.json()["error"]
 
+def test_query_timeout_502():
+    from psycopg.errors import QueryCanceled  # 继承 OperationalError，sqlstate=57014
+    with patch("aigis_web.app.run_query",
+               side_effect=QueryCanceled("canceling statement due to statement timeout")):
+        c = TestClient(create_app())
+        r = c.post("/api/query", json={"question": "x"})
+        assert r.status_code == 502 and "超时" in r.json()["error"]
+
 def test_empty_question_422():
     c = TestClient(create_app())
     r = c.post("/api/query", json={"question": "  "})
