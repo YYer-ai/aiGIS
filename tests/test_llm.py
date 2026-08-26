@@ -9,7 +9,7 @@ def test_generate_returns_content():
     fake = MagicMock()
     fake.chat.completions.create.return_value = MagicMock(
         choices=[MagicMock(message=MagicMock(content='{"sql":"SELECT 1","reasoning":"r"}'))])
-    p = OpenAICompatProvider("https://api.deepseek.com", "sk-x", "deepseek-chat", client=fake)
+    p = OpenAICompatProvider("http://223.92.35.113:8001/v1", "sk-x", "qwen3827b", client=fake)
     assert '"sql"' in p.generate("sys", "user")
 
 def test_retry_once_on_timeout():
@@ -20,12 +20,12 @@ def test_retry_once_on_timeout():
     assert p.generate("s", "u") == "ok"
 
 def test_make_provider_by_cfg():
-    p = make_provider(Config(deepseek_api_key="sk-1"))
-    assert p.model == "deepseek-chat"
+    p = make_provider(Config(llm_api_key="sk-1"))
+    assert p.model == "qwen3827b"
 
 def test_missing_key_raises():
     with pytest.raises(LLMError):
-        make_provider(Config(deepseek_api_key=""))
+        make_provider(Config(llm_api_key=""))
 
 def test_status_error_becomes_llmerror_no_retry():
     # 402/401 等状态错误：转 LLMError（含状态码与余额提示）且不重试

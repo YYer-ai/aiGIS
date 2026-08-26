@@ -29,7 +29,7 @@
 
 ## 关键决策
 
-- LLM：DeepSeek API 直连（用户裁决不用 Ollama，2026-08-25）
+- LLM：自建 Qwen3.8-27B API 直连（OpenAI 兼容端点通用化；2026-08-26 由 DeepSeek API 切换，最初裁决不用 Ollama）
 - 数据：BBBike 北京城区提取 22MB；osm2pgsql flex 4 表+ring_areas，中文 COMMENT
 - 安全：sqlglot 白名单校验（修复 quoted 绕过+黑名单扩容）+ 只读账号 + statement_timeout 三层
 - 环路：ST_Polygonize 因数据缝隙失效 → 分级容差 buffer + 最大内洞（偏差 1-15%）

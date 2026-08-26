@@ -18,11 +18,11 @@
 
 | 决策点 | 选择 | 理由 |
 |---|---|---|
-| 主力 LLM | DeepSeek API | 代码能力强、价格低、OpenAI 兼容 SDK（用户裁决 2026-08-25：不用本地 Ollama，直接接 API） |
+| 主力 LLM | 自建 Qwen3.8-27B API（OpenAI 兼容直连） | 用户提供自建端点，OpenAI 兼容 SDK 直连，可切换任意兼容厂商（2026-08-26 由 DeepSeek API 切换；2026-08-25 用户裁决不用本地 Ollama） |
 | schema 上下文 | 全量 schema 注入 prompt | Phase 1 仅 5-6 张表（4 张 OSM 表 + ring_areas 等），零 RAG 依赖；后续表多再升级向量库 |
 | 测试数据城市 | 北京 | README 示例场景（"三环内"），pbf 约 150MB |
 | OSM 导入模式 | osm2pgsql flex（自定义 lua） | 列名语义化 + 中文 COMMENT，LLM 可直接读懂 |
-| 离线韧性 | 全部件本地化 | 数据/模型/工具/镜像全部落盘，仅 DeepSeek 调用需网络 |
+| 离线韧性 | 全部件本地化 | 数据/工具/镜像全部落盘，仅 LLM API 调用需网络 |
 
 ## 3. 数据层设计
 
@@ -88,7 +88,7 @@
 
 ### 4.3 LLM Provider
 
-- DeepSeek 官方 API：`https://api.deepseek.com`，模型 `deepseek-chat`，OpenAI 兼容 SDK 直连（后续换厂商只需改 base_url/model 配置）。
+- 自建 Qwen3.8-27B API（OpenAI 兼容直连）：`http://223.92.35.113:8001/v1`，模型 `qwen3827b`，OpenAI 兼容 SDK 直连（换厂商只需改 `.env` 中 LLM_BASE_URL/LLM_MODEL 配置）。
 - 网络/超时异常：清晰报错并自动重试 1 次。
 
 ## 5. CLI 与评估

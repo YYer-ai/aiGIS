@@ -4,7 +4,7 @@
 
 **Goal:** 构建中文自然语言 → 空间 SQL → PostGIS 只读执行 → GeoJSON 的命令行引擎，50 题准确率 ≥80%。
 
-**Architecture:** 单 Python 包 `src/aigis`（9 个单一职责模块），数据管道独立脚本（osm2pgsql flex 导入 + 环路预处理）。LLM 层为 OpenAI 兼容 Provider（DeepSeek API 直连，用户裁决不用本地 Ollama）。SQL 安全 = sqlglot 校验白名单 + `aigis_readonly` 只读账号双保险，执行错误回喂 LLM 自修复（≤3 次）。
+**Architecture:** 单 Python 包 `src/aigis`（9 个单一职责模块），数据管道独立脚本（osm2pgsql flex 导入 + 环路预处理）。LLM 层为 OpenAI 兼容 Provider（自建 Qwen3.8-27B API 直连，OpenAI 兼容端点通用化，可切换任意兼容厂商）。SQL 安全 = sqlglot 校验白名单 + `aigis_readonly` 只读账号双保险，执行错误回喂 LLM 自修复（≤3 次）。
 
 **Tech Stack:** Python 3.12（uv 托管）、psycopg 3、sqlglot、openai SDK、typer、pytest；PostGIS 16-3.5（Docker，已就绪）；osm2pgsql 2.3.1（tools/，已就绪）。
 
@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - DB 连接：host=localhost port=5432 dbname=aigis；引擎执行账号 `aigis_readonly/aigis_readonly`，管理账号 `aigis/aigis_dev_2026`（来自 `.env`）。
-- LLM：DeepSeek API（`https://api.deepseek.com` + `deepseek-chat`，`.env` 配 `DEEPSEEK_API_KEY`；用户裁决不用本地 Ollama）。
+- LLM：自建 Qwen3.8-27B API（`http://223.92.35.113:8001/v1` + `qwen3827b`，`.env` 配 `LLM_API_KEY/LLM_BASE_URL/LLM_MODEL`；OpenAI 兼容端点，可切换任意兼容厂商）。
 - SQL 校验：仅单条 SELECT（含 CTE/UNION），表白名单，函数黑名单 `pg_sleep/pg_read_file/pg_ls_dir/pg_read_binary_file/lo_import/lo_export`，禁止 COPY。
 - 几何输出约定：LLM 生成 SQL 必须用 `ST_AsGeoJSON(geom) AS geometry` 列输出几何。
 - 提交信息一律中文；测试框架 pytest；每任务一提交。

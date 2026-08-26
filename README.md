@@ -86,7 +86,7 @@ Agent 层做意图路由，两类能力走同一个循环：
 | 工具协议 | MCP（FastMCP） | 一份工具服务 Web / QGIS / AI 客户端 |
 | RAG 向量库 | chromadb 或 sqlite-vec | 个人项目规模够用 |
 | Embedding | bge-m3 | 中文效果好，可本地 |
-| LLM | DeepSeek / GLM / Qwen API；本地可选 Ollama | 生成 SQL 属代码任务，选代码强的模型 |
+| LLM | 自建 Qwen3.8-27B API（OpenAI 兼容），可切换任意兼容端点 | 生成 SQL 属代码任务，选代码强的模型 |
 | 后端 | FastAPI + WebSocket | 流式输出回复与工具状态 |
 | 前端 | React + Vite + MapLibre GL JS | 双栏：聊天流 + 地图画布；大数据可加 deck.gl |
 | 空间数据库 | PostgreSQL + PostGIS（Docker） | GPL v2 开源，行业标准 |

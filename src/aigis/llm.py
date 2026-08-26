@@ -15,7 +15,7 @@ class LLMProvider(Protocol):
 
 class OpenAICompatProvider:
     def __init__(self, base_url: str, api_key: str, model: str,
-                 timeout: float = 60.0, client=None):
+                 timeout: float = 300.0, client=None):
         self.model = model
         self._cli = client or OpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
 
@@ -29,18 +29,18 @@ class OpenAICompatProvider:
                 return resp.choices[0].message.content
             except APIStatusError as e:  # 401/402 等状态错误重试无意义，直接面向用户报错
                 raise LLMError(
-                    f"DeepSeek API 返回错误 {e.status_code}：{e.message}"
+                    f"LLM API 返回错误 {e.status_code}：{e.message}"
                     "——请检查 key 与账户余额")
             # openai 3.x 的 APITimeoutError 不继承内建 TimeoutError，需一并捕获
             except (APITimeoutError, APIConnectionError, TimeoutError):
                 if attempt == 2:
                     raise LLMError(
-                        "DeepSeek API 连接失败（已重试一次），请检查网络与 DEEPSEEK_API_KEY")
+                        "LLM API 连接失败（已重试一次），请检查网络与 LLM_API_KEY")
                 time.sleep(2)
 
 
 def make_provider(cfg: Config) -> LLMProvider:
-    if not cfg.deepseek_api_key:
-        raise LLMError("缺少 DEEPSEEK_API_KEY，请在 .env 配置")
-    return OpenAICompatProvider(cfg.deepseek_base_url, cfg.deepseek_api_key,
-                                cfg.deepseek_model)
+    if not cfg.llm_api_key:
+        raise LLMError("缺少 LLM_API_KEY，请在 .env 配置")
+    return OpenAICompatProvider(cfg.llm_base_url, cfg.llm_api_key,
+                                cfg.llm_model)
