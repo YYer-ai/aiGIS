@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 
-// 底图瓦片：默认 OSM；国内访问慢时可把下方 tiles 换成 [AMAP_TILE_URL]
-const OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+// 底图瓦片：默认高德（OSM 国内不可达）；海外环境可把下方 tiles 换成 [OSM_TILE_URL]
 const AMAP_TILE_URL =
   "https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}";
+const OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 // —— 纯工具（导出便于复用/测试） ——
 
@@ -75,8 +75,8 @@ export default function MapPanel({ layers = [], onToggle, onRemove }) {
       container: containerRef.current,
       style: {
         version: 8,
-        sources: { osm: { type: "raster", tiles: [OSM_TILE_URL], tileSize: 256 } },
-        layers: [{ id: "osm", type: "raster", source: "osm" }],
+        sources: { basemap: { type: "raster", tiles: [AMAP_TILE_URL], tileSize: 256 } },
+        layers: [{ id: "basemap", type: "raster", source: "basemap" }],
       },
       center: [116.4, 39.9],
       zoom: 10,
