@@ -86,23 +86,31 @@ Agent 层做意图路由，两类能力走同一个循环：
 | 工具协议 | MCP（FastMCP） | 一份工具服务 Web / QGIS / AI 客户端 |
 | RAG 向量库 | chromadb 或 sqlite-vec | 个人项目规模够用 |
 | Embedding | bge-m3 | 中文效果好，可本地 |
-| LLM | 自建 Qwen3.8-27B API（OpenAI 兼容），可切换任意兼容端点 | 生成 SQL 属代码任务，选代码强的模型 |
+| LLM | 自建 Qwen3.8-27B API（OpenAI 兼容），端点可配置切换 | 生成 SQL 属代码任务，选代码强的模型 |
 | 后端 | FastAPI + WebSocket | 流式输出回复与工具状态 |
 | 前端 | React + Vite + MapLibre GL JS | 双栏：聊天流 + 地图画布；大数据可加 deck.gl |
 | 空间数据库 | PostgreSQL + PostGIS（Docker） | GPL v2 开源，行业标准 |
 | 数据源 | OSM（osm2pgsql 入库）+ 政府开放数据 | 免费覆盖全国 |
 
-## 五、演进路线（不摊大饼）
+## 五、快速开始
+
+1. 起库：`docker compose up -d`（PostgreSQL + PostGIS）
+2. 导入数据：`pwsh scripts/import_osm.ps1`（OSM 城区裁剪包入库），再 `uv run python scripts/prep_rings.py` 生成二环~六环面
+3. 配置 LLM：`.env` 中设置 `LLM_API_KEY`（OpenAI 兼容端点）
+4. 提问：`uv run aigis "三环内有多少个公园"`
+5. 评估：`uv run aigis-eval`
+
+## 六、演进路线（不摊大饼）
 
 | 阶段 | 内容 | 预估 | 验收标准 |
 |---|---|---|---|
-| **Phase 1（含金量本体）** | 只做 `spatial_query` 引擎：中文 → schema RAG → 空间 SQL → 只读执行 → GeoJSON | 3-4 周 | 命令行可跑；自建 50 条中文测试问题，SQL 生成准确率达标（目标 ≥80%） |
+| **Phase 1（含金量本体）** | 只做 `spatial_query` 引擎：中文 → schema RAG → 空间 SQL → 只读执行 → GeoJSON | 3-4 周 | 命令行可跑；自建 50 条中文测试问题，SQL 生成准确率达标（目标 ≥80%）✅ 完成（2026-08-26）：50 题执行成功率 100%，语义准确率 94%（目标 ≥80%），自修复命中 2 题；错题 3 个均系数据覆盖（城区裁剪），非引擎错误 |
 | **Phase 2** | MCP 封装 + LangGraph 循环 + Web 双栏对话平台 | 约 1 个月 | 对话加载图层到地图；工具调用过程可视化 |
 | **Phase 3** | `qgis_process` 重型分析、QGIS 桌面端（qgis_mcp）、多模态（AI 看地图截图续聊） | 按需 | 缓冲区/网络分析类指令端到端跑通 |
 
 > 原则：引擎不准，上层全是空壳。Phase 1 的准确率工程（schema RAG、空间函数 few-shot、错误自修复回环）是整个项目的护城河。
 
-## 六、参考项目
+## 七、参考项目
 
 - [opengeos/geoai](https://github.com/opengeos/geoai) — GeoAI 工具库与 QGIS 插件（SAM 3、树木/水体提取）
 - [jjsantos01/qgis_mcp](https://github.com/jjsantos01/qgis_mcp) — QGIS 的 MCP Server（已停更，可参考实现）

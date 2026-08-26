@@ -16,49 +16,49 @@
   category: 环内过滤
   expected_semantics: ring_areas(三环,ring_level=3) ST_Contains osm_areas(leisure=park) count；注意仅面状公园
   expect_rows_range: [20, 800]
-  human_pass: null
+  human_pass: true
 - id: 2
   question: 五环内有多少家餐厅
   category: 环内过滤
   expected_semantics: ring_areas(五环,ring_level=5) ST_Contains osm_pois(amenity=restaurant) count
   expect_rows_range: [200, 8000]
-  human_pass: null
+  human_pass: true
 - id: 3
   question: 二环内有多少家便利店
   category: 环内过滤
   expected_semantics: ring_areas(二环,ring_level=2) ST_Contains osm_pois(shop=convenience) count
   expect_rows_range: [10, 500]
-  human_pass: null
+  human_pass: true
 - id: 4
   question: 三环内的加油站有多少个
   category: 环内过滤
   expected_semantics: ring_areas(三环) ST_Contains osm_pois(amenity=fuel) count
   expect_rows_range: [5, 200]
-  human_pass: null
+  human_pass: true
 - id: 5
   question: 五环内有多少所学校
   category: 环内过滤
   expected_semantics: ring_areas(五环) ST_Contains osm_pois(amenity=school) count
   expect_rows_range: [50, 2000]
-  human_pass: null
+  human_pass: true
 - id: 6
   question: 二环内名字包含"故宫"的地点有哪些
   category: 环内过滤
   expected_semantics: ring_areas(二环) ST_Contains + name LIKE '%故宫%'，osm_pois/osm_areas 枚举（锚点"故宫"应可 LIKE 命中）
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 7
   question: 四环内有多少条主干路
   category: 环内过滤
   expected_semantics: ring_areas(四环) ST_Contains/ST_Intersects osm_roads(highway=primary) count
   expect_rows_range: [10, 600]
-  human_pass: null
+  human_pass: true
 - id: 8
   question: 五环内有多少个水体
   category: 环内过滤
   expected_semantics: ring_areas(五环) ST_Contains osm_areas(natural=water) count
   expect_rows_range: [10, 300]
-  human_pass: null
+  human_pass: true
 
 # ── 距离查询（ST_DWithin，锚点 LIKE 定位）8 题 ──
 - id: 9
@@ -66,49 +66,49 @@
   category: 距离查询
   expected_semantics: 锚点 osm_pois name LIKE '%天安门%'（可多个，取任一/全部）ST_DWithin(geography, 1000) osm_pois(amenity=restaurant) count
   expect_rows_range: [10, 500]
-  human_pass: null
+  human_pass: true
 - id: 10
   question: 距故宫500米内有哪些咖啡馆
   category: 距离查询
   expected_semantics: 锚点 name LIKE '%故宫%' ST_DWithin(geography, 500) osm_pois(amenity=cafe) 枚举
   expect_rows_range: [1, 50]
-  human_pass: null
+  human_pass: true
 - id: 11
   question: 距颐和园2公里内有多少家酒店
   category: 距离查询
   expected_semantics: 锚点 name LIKE '%颐和园%' ST_DWithin(geography, 2000) osm_pois(tourism=hotel) count
   expect_rows_range: [1, 100]
-  human_pass: null
+  human_pass: true
 - id: 12
   question: 距北京南站1公里内有多少家便利店
   category: 距离查询
   expected_semantics: 锚点 name LIKE '%北京南站%' ST_DWithin(geography, 1000) osm_pois(shop=convenience) count
   expect_rows_range: [5, 100]
-  human_pass: null
+  human_pass: false
 - id: 13
   question: 距首都机场3公里内有哪些加油站
   category: 距离查询
   expected_semantics: 锚点 name LIKE '%首都机场%' ST_DWithin(geography, 3000) osm_pois(amenity=fuel) 枚举
   expect_rows_range: [1, 20]
-  human_pass: null
+  human_pass: true
 - id: 14
   question: 距王府井800米内有多少个景点
   category: 距离查询
   expected_semantics: 锚点 name LIKE '%王府井%' ST_DWithin(geography, 800) osm_pois(tourism IS NOT NULL) count
   expect_rows_range: [5, 100]
-  human_pass: null
+  human_pass: true
 - id: 15
   question: 距中关村2公里内有多少家餐厅
   category: 距离查询
   expected_semantics: 锚点 name LIKE '%中关村%'（命中多个含"中关村"地点时任取其一）ST_DWithin(geography, 2000) osm_pois(amenity=restaurant) count
   expect_rows_range: [10, 500]
-  human_pass: null
+  human_pass: true
 - id: 16
   question: 距国贸1.5公里内有哪些银行
   category: 距离查询
   expected_semantics: 锚点 name LIKE '%国贸%' ST_DWithin(geography, 1500) osm_pois(amenity=bank) 枚举
   expect_rows_range: [5, 60]
-  human_pass: null
+  human_pass: true
 
 # ── 地名模糊（name LIKE）6 题 ──
 - id: 17
@@ -116,37 +116,37 @@
   category: 地名模糊
   expected_semantics: osm_pois name LIKE '%中关村%' 枚举（同名地点多，上限放宽）
   expect_rows_range: [5, 200]
-  human_pass: null
+  human_pass: true
 - id: 18
   question: 名字包含"清华大学"的地点
   category: 地名模糊
   expected_semantics: osm_pois/osm_areas name LIKE '%清华大学%' 枚举
   expect_rows_range: [1, 30]
-  human_pass: null
+  human_pass: true
 - id: 19
   question: 名字包含"王府井"的餐厅
   category: 地名模糊
   expected_semantics: osm_pois name LIKE '%王府井%' AND amenity=restaurant 枚举
   expect_rows_range: [1, 60]
-  human_pass: null
+  human_pass: true
 - id: 20
   question: 名字包含"颐和园"的兴趣点
   category: 地名模糊
   expected_semantics: osm_pois name LIKE '%颐和园%' 枚举
   expect_rows_range: [1, 30]
-  human_pass: null
+  human_pass: true
 - id: 21
   question: 名字包含"长安街"的道路
   category: 地名模糊
   expected_semantics: osm_roads name LIKE '%长安街%' 枚举（同名分段多，路段可能十几条）
   expect_rows_range: [1, 40]
-  human_pass: null
+  human_pass: true
 - id: 22
   question: 名字包含"胡同"的兴趣点有多少个
   category: 地名模糊
   expected_semantics: osm_pois name LIKE '%胡同%' count（北京胡同名 POI 数量大）
   expect_rows_range: [100, 5000]
-  human_pass: null
+  human_pass: true
 
 # ── 面积排序（ST_Area geography + ORDER BY）6 题，均针对面表 osm_areas ──
 - id: 23
@@ -154,37 +154,37 @@
   category: 面积排序
   expected_semantics: ring_areas(五环) ST_Contains osm_areas(leisure=park) ORDER BY ST_Area(geography) DESC LIMIT 3，输出名称+面积
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 24
   question: 三环内面积最大的三个绿地
   category: 面积排序
   expected_semantics: ring_areas(三环) ST_Contains osm_areas(leisure=park 或 landuse=grass/forest 类绿地) ORDER BY ST_Area DESC LIMIT 3
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 25
   question: 全市面积最大的十个公园
   category: 面积排序
   expected_semantics: osm_areas(leisure=park) ORDER BY ST_Area(geography) DESC LIMIT 10
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 26
   question: 四环内面积最大的三个水体
   category: 面积排序
   expected_semantics: ring_areas(四环) ST_Contains osm_areas(natural=water) ORDER BY ST_Area DESC LIMIT 3
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 27
   question: 六环内面积最大的五个建筑物
   category: 面积排序
   expected_semantics: ring_areas(六环) ST_Contains osm_areas(building IS NOT NULL) ORDER BY ST_Area(geography) DESC LIMIT 5
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 28
   question: 三环内面积最大的三个居住区
   category: 面积排序
   expected_semantics: ring_areas(三环) ST_Contains osm_areas(landuse=residential) ORDER BY ST_Area DESC LIMIT 3
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 
 # ── 行政区（osm_boundaries + admin_level）6 题 ──
 # 注：admin_level=6 区县在库仅约 4 个（数据裁剪），"某区"类题目结果可能因边界缺失偏低；admin_level=8 街道 191 条覆盖较好。
@@ -193,37 +193,37 @@
   category: 行政区
   expected_semantics: osm_boundaries(admin_level=6, name LIKE '%海淀%') ST_Contains osm_pois(amenity=restaurant) count；在库区县边界仅约 4 个，结果偏低可接受
   expect_rows_range: [100, 5000]
-  human_pass: null
+  human_pass: false
 - id: 30
   question: 朝阳区有多少个公园
   category: 行政区
   expected_semantics: osm_boundaries(admin_level=6, name LIKE '%朝阳%') ST_Contains osm_areas(leisure=park) count；区县覆盖限制同上
   expect_rows_range: [50, 2000]
-  human_pass: null
+  human_pass: true
 - id: 31
   question: 北京一共有多少个街道
   category: 行政区
   expected_semantics: osm_boundaries(admin_level=8, boundary=administrative) count；在库约 191 条
   expect_rows_range: [150, 230]
-  human_pass: null
+  human_pass: false
 - id: 32
   question: 名字包含"中关村"的街道有哪些
   category: 行政区
   expected_semantics: osm_boundaries(admin_level=8) name LIKE '%中关村%' 枚举
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 33
   question: 西城区范围内有多少家咖啡馆
   category: 行政区
   expected_semantics: osm_boundaries(admin_level=6, name LIKE '%西城%') ST_Contains osm_pois(amenity=cafe) count；区县覆盖限制
   expect_rows_range: [10, 500]
-  human_pass: null
+  human_pass: true
 - id: 34
   question: 东城区内有多少所学校
   category: 行政区
   expected_semantics: osm_boundaries(admin_level=6, name LIKE '%东城%') ST_Contains osm_pois(amenity=school) count；区县覆盖限制
   expect_rows_range: [10, 500]
-  human_pass: null
+  human_pass: true
 
 # ── 叠加计算（绿化覆盖率/面积汇总）6 题 ──
 - id: 35
@@ -231,37 +231,37 @@
   category: 叠加计算
   expected_semantics: osm_boundaries(admin_level=6) JOIN 绿地 osm_areas(leisure=park 或 landuse 绿地类) ST_Intersection 面积/行政区面积 ORDER BY DESC；在库区县仅约 4 个，行数少属数据限制非错误
   expect_rows_range: [1, 20]
-  human_pass: null
+  human_pass: true
 - id: 36
   question: 二环内绿地总面积是多少平方公里
   category: 叠加计算
   expected_semantics: ring_areas(二环) ST_Intersection 绿地面积求和 /1e6 单值（平方公里）
   expect_rows_range: [0.5, 60]
-  human_pass: null
+  human_pass: true
 - id: 37
   question: 三环内绿化覆盖率是多少
   category: 叠加计算
   expected_semantics: ring_areas(三环) 绿地 ST_Intersection 面积 / 环内面积，单值小数比例（非百分数）
   expect_rows_range: [0.005, 0.95]
-  human_pass: null
+  human_pass: true
 - id: 38
   question: 各环路内的公园总面积对比
   category: 叠加计算
   expected_semantics: ring_areas 全部环 GROUP BY ring_name SUM(ST_Intersection 公园面积)，行数≈环数（≤5）
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 39
   question: 五环内绿地面积最大的前三个行政区
   category: 叠加计算
   expected_semantics: ring_areas(五环) ST_Intersection 绿地 GROUP BY osm_boundaries(admin_level=6) ORDER BY SUM(area) DESC LIMIT 3；区县覆盖限制
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 40
   question: 四环内绿化覆盖总面积是多少平方公里
   category: 叠加计算
   expected_semantics: ring_areas(四环) 绿地 ST_Intersection 面积求和 /1e6 单值（平方公里）
   expect_rows_range: [1, 120]
-  human_pass: null
+  human_pass: true
 
 # ── 缓冲区（ST_Buffer）4 题 ──
 - id: 41
@@ -269,25 +269,25 @@
   category: 缓冲区
   expected_semantics: osm_roads name LIKE '%长安街%'（多分段取全部或任一段）ST_Buffer(geography, 500) ST_Intersects/ST_DWithin osm_pois(shop=convenience) count；ST_DWithin(500) 语义等价
   expect_rows_range: [5, 300]
-  human_pass: null
+  human_pass: true
 - id: 42
   question: 故宫周围1公里内有多少家餐厅
   category: 缓冲区
   expected_semantics: 锚点 name LIKE '%故宫%' ST_Buffer(geography, 1000) / ST_DWithin(1000) osm_pois(amenity=restaurant) count
   expect_rows_range: [10, 500]
-  human_pass: null
+  human_pass: true
 - id: 43
   question: 中关村大街两侧300米内有哪些咖啡馆
   category: 缓冲区
   expected_semantics: osm_roads name LIKE '%中关村大街%' ST_Buffer(geography, 300) osm_pois(amenity=cafe) 枚举
   expect_rows_range: [5, 100]
-  human_pass: null
+  human_pass: true
 - id: 44
   question: 北京南站周边2公里内有多少家酒店
   category: 缓冲区
   expected_semantics: 锚点 name LIKE '%北京南站%' ST_Buffer(geography, 2000) / ST_DWithin(2000) osm_pois(tourism=hotel) count
   expect_rows_range: [1, 50]
-  human_pass: null
+  human_pass: true
 
 # ── 最近邻（ORDER BY ST_Distance LIMIT）6 题 ──
 - id: 45
@@ -295,34 +295,34 @@
   category: 最近邻
   expected_semantics: 锚点 name LIKE '%天安门%'（多命中任取其一）CROSS JOIN LATERAL / ORDER BY ST_Distance LIMIT 10，输出名称+距离
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 46
   question: 离故宫最近的五个公园
   category: 最近邻
   expected_semantics: 锚点 name LIKE '%故宫%' ORDER BY ST_Distance(geography) osm_areas(leisure=park) LIMIT 5
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 47
   question: 离颐和园最近的三个加油站
   category: 最近邻
   expected_semantics: 锚点 name LIKE '%颐和园%' ORDER BY ST_Distance osm_pois(amenity=fuel) LIMIT 3
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 48
   question: 离首都机场最近的五家酒店
   category: 最近邻
   expected_semantics: 锚点 name LIKE '%首都机场%' ORDER BY ST_Distance osm_pois(tourism=hotel) LIMIT 5
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 49
   question: 离王府井最近的十个便利店
   category: 最近邻
   expected_semantics: 锚点 name LIKE '%王府井%' ORDER BY ST_Distance osm_pois(shop=convenience) LIMIT 10
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
 - id: 50
   question: 离国贸最近的三个咖啡馆
   category: 最近邻
   expected_semantics: 锚点 name LIKE '%国贸%' ORDER BY ST_Distance osm_pois(amenity=cafe) LIMIT 3
   expect_rows_range: [1, 10]
-  human_pass: null
+  human_pass: true
