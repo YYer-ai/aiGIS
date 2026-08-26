@@ -28,6 +28,7 @@ DANGEROUS_FUNCS = {
     "table_to_xml",
     "table_to_xml_and_xmlschema",
     "database_to_xml",
+    "database_to_xml_and_xmlschema",
 }
 
 

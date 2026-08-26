@@ -40,6 +40,8 @@ BAD = [
     # 最终审查修复波：xml 导出函数族（字符串参数里的查询绕过表白名单）
     ("SELECT query_to_xml('SELECT * FROM osm_pois', true, true, '')", "函数"),
     ("SELECT table_to_xml_and_xmlschema('osm_pois', true, true, '')", "函数"),
+    # 复审补充：database_to_xml 同族遗漏（整库导出，无需表名即可绕过表白名单）
+    ("SELECT database_to_xml_and_xmlschema(true, true, '')", "函数"),
     # 最终审查修复波：数据修改 CTE（顶层 SELECT + CTE 内写操作）不得穿透
     ("WITH t AS (INSERT INTO osm_pois VALUES (1) RETURNING *) SELECT * FROM t", "数据修改"),
     ("WITH t AS (UPDATE osm_pois SET name='x' RETURNING *) SELECT * FROM t", "数据修改"),
