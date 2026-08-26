@@ -8,6 +8,8 @@ __pycache__/
 
 # Node
 node_modules/
+web/node_modules/
+web/dist/
 
 # 数据与工具（体积大，不入库）
 data/*

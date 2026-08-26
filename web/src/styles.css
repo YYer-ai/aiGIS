@@ -1,0 +1,22 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+.console {
+  display: flex;
+  height: 100%;
+}
+
+.chat-panel {
+  flex: 0 0 380px;
+  border-right: 1px solid #d0d0d0;
+  padding: 12px;
+  font-family: system-ui, sans-serif;
+}
+
+.map-panel {
+  flex: 1;
+  padding: 12px;
+  font-family: system-ui, sans-serif;
+}
