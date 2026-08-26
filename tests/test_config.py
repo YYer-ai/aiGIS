@@ -23,10 +23,13 @@ def test_load_env_db_credentials(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("POSTGRES_USER", "u_shell")
     monkeypatch.setenv("POSTGRES_PASSWORD", "p_shell")
     c = load_config(str(f))
-    assert c.db_user == "u_env" and c.db_password == "p_env"
+    # POSTGRES_* 是超管凭据 -> 落到管理账号；执行账号不受 .env 污染
+    assert c.admin_user == "u_env" and c.admin_password == "p_env"
+    assert c.db_user == "aigis_readonly" and c.db_password == "aigis_readonly"
 
 def test_db_credentials_default_when_unset(tmp_path: Path, monkeypatch):
     monkeypatch.delenv("POSTGRES_USER", raising=False)
     monkeypatch.delenv("POSTGRES_PASSWORD", raising=False)
     c = load_config(str(tmp_path / "none.env"))  # 不存在的 env 文件：不注入任何值
+    assert c.admin_user == "aigis" and c.admin_password == "aigis_dev_2026"
     assert c.db_user == "aigis_readonly" and c.db_password == "aigis_readonly"
