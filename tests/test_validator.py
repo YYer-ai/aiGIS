@@ -37,6 +37,15 @@ BAD = [
     # 形态保持：大小写与 schema 前缀的函数名归一后仍命中黑名单
     ("SELECT PG_SLEEP(10)", "函数"),
     ("SELECT pg_catalog.pg_read_file('x')", "函数"),
+    # 最终审查修复波：xml 导出函数族（字符串参数里的查询绕过表白名单）
+    ("SELECT query_to_xml('SELECT * FROM osm_pois', true, true, '')", "函数"),
+    ("SELECT table_to_xml_and_xmlschema('osm_pois', true, true, '')", "函数"),
+    # 最终审查修复波：数据修改 CTE（顶层 SELECT + CTE 内写操作）不得穿透
+    ("WITH t AS (INSERT INTO osm_pois VALUES (1) RETURNING *) SELECT * FROM t", "数据修改"),
+    ("WITH t AS (UPDATE osm_pois SET name='x' RETURNING *) SELECT * FROM t", "数据修改"),
+    ("WITH t AS (DELETE FROM osm_pois RETURNING *) SELECT * FROM t", "数据修改"),
+    # 最终审查修复波：advisory 锁同族
+    ("SELECT pg_advisory_xact_lock(42)", "函数"),
 ]
 
 

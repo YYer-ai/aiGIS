@@ -19,6 +19,16 @@ def test_retry_once_on_timeout():
     p = OpenAICompatProvider("https://x", "k", "m", client=fake)
     assert p.generate("s", "u") == "ok"
 
+def test_second_timeout_raises_llmerror(monkeypatch):
+    # 两次都超时：重试一次后转 LLMError，不再吞异常
+    monkeypatch.setattr("aigis.llm.time.sleep", lambda s: None)  # 跳过重试间隔
+    fake = MagicMock()
+    fake.chat.completions.create.side_effect = [TimeoutError, TimeoutError]
+    p = OpenAICompatProvider("https://x", "k", "m", client=fake)
+    with pytest.raises(LLMError, match="连接失败"):
+        p.generate("s", "u")
+    assert fake.chat.completions.create.call_count == 2
+
 def test_make_provider_by_cfg():
     p = make_provider(Config(llm_api_key="sk-1"))
     assert p.model == "qwen3827b"

@@ -2,8 +2,11 @@
 # 统计纯函数测试：mock run_query 返回固定 Outcome，不依赖真库/真 LLM。
 from unittest.mock import MagicMock
 
+import psycopg
+
 from aigis.config import Config
 from aigis.evaluator import run_eval
+from aigis.llm import LLMError
 from aigis.repair import Outcome
 
 
@@ -32,6 +35,29 @@ def test_run_eval_counts_exec_ok_and_repaired(monkeypatch):
     assert rep["repaired"] == 1          # 仅题2（ok 且 attempts>1）
     assert [r["attempts"] for r in rep["results"]] == [1, 2, 3]
     assert rep["results"][2]["ok"] is False and rep["results"][2]["in_range"] is None
+
+
+def test_run_eval_single_question_exception_continues(monkeypatch):
+    """第2题抛外部异常（DB 断连/LLM 故障）：该题记 FAIL+error，整轮不中断。"""
+    def fake(q, cfg):
+        if q == "第2题":
+            raise psycopg.OperationalError("connection closed")
+        return Outcome(question=q, ok=True, attempts=1, rows=[(1,)])
+    monkeypatch.setattr("aigis.evaluator.run_query", fake)
+    questions = [{"id": i, "question": f"第{i}题"} for i in range(1, 51)]
+    rep = run_eval(questions, Config(), progress=False)
+    assert rep["total"] == 50 and rep["exec_ok"] == 49
+    r2 = rep["results"][1]
+    assert r2["ok"] is False and "connection closed" in r2["error"]
+
+
+def test_run_eval_llm_error_marks_question_failed(monkeypatch):
+    def fake(q, cfg):
+        raise LLMError("LLM API 连接失败")
+    monkeypatch.setattr("aigis.evaluator.run_query", fake)
+    rep = run_eval([{"id": 1, "question": "q"}], Config(), progress=False)
+    assert rep["total"] == 1 and rep["exec_ok"] == 0
+    assert rep["results"][0]["error"] == "LLM API 连接失败"
 
 
 def test_run_eval_accuracy_annotated(monkeypatch):

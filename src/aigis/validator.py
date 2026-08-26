@@ -17,6 +17,17 @@ DANGEROUS_FUNCS = {
     "setval",
     "reset",
     "pg_advisory_lock",
+    # 最终审查修复波：advisory 锁同族（防换名绕过）
+    "pg_advisory_lock_all",
+    "pg_advisory_xact_lock",
+    "pg_try_advisory_lock",
+    "pg_advisory_unlock",
+    # 最终审查修复波：xml 导出函数族（字符串参数里的查询不受表白名单约束）
+    "query_to_xml",
+    "query_to_xml_and_xmlschema",
+    "table_to_xml",
+    "table_to_xml_and_xmlschema",
+    "database_to_xml",
 }
 
 
@@ -37,6 +48,11 @@ def validate(sql: str, allowed_tables: set[str]) -> tuple[bool, str]:
     stmt = statements[0]
     if not isinstance(stmt, (exp.Select, exp.Union)):
         return False, f"非查询语句：解析结果为 {type(stmt).__name__}，仅允许 SELECT/UNION 查询"
+    # 数据修改 CTE（WITH t AS (INSERT/UPDATE/DELETE ...) SELECT ...）顶层是 Select，
+    # 不落进上面的语句类型检查，需整树遍历写节点（第一层防线不得对此失明）
+    writes = list(stmt.find_all(exp.Insert, exp.Update, exp.Delete))
+    if writes:
+        return False, "含数据修改语句（INSERT/UPDATE/DELETE），仅允许只读查询"
     # CTE 名是对本地子查询的引用，不算物理表
     cte_names = {c.alias.lower() for c in stmt.find_all(exp.CTE)}
     for t in stmt.find_all(exp.Table):

@@ -16,3 +16,17 @@ def test_load_env(tmp_path: Path, monkeypatch):
     monkeypatch.setenv("LLM_API_KEY", "shell-conflict-value")
     c = load_config(str(f))
     assert c.llm_api_key == "sk-test"
+
+def test_load_env_db_credentials(tmp_path: Path, monkeypatch):
+    f = tmp_path / ".env"
+    f.write_text("POSTGRES_USER=u_env\nPOSTGRES_PASSWORD=p_env\n", encoding="utf-8")
+    monkeypatch.setenv("POSTGRES_USER", "u_shell")
+    monkeypatch.setenv("POSTGRES_PASSWORD", "p_shell")
+    c = load_config(str(f))
+    assert c.db_user == "u_env" and c.db_password == "p_env"
+
+def test_db_credentials_default_when_unset(tmp_path: Path, monkeypatch):
+    monkeypatch.delenv("POSTGRES_USER", raising=False)
+    monkeypatch.delenv("POSTGRES_PASSWORD", raising=False)
+    c = load_config(str(tmp_path / "none.env"))  # 不存在的 env 文件：不注入任何值
+    assert c.db_user == "aigis_readonly" and c.db_password == "aigis_readonly"

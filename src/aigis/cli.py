@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+import psycopg
 import typer
 
 from aigis.config import load_config
@@ -26,6 +27,9 @@ def query(
         result = run_query(question, cfg)
     except LLMError as e:
         typer.echo(f"错误：{e}", err=True)
+        raise typer.Exit(1)
+    except psycopg.OperationalError:  # DB 断连（schema 导出/建连失败）给用户明确提示
+        typer.echo("数据库连接失败，请确认 aigis-postgis 容器在运行", err=True)
         raise typer.Exit(1)
     # 工具过程可见（README）：始终打印生成的 SQL，便于人工核对
     typer.echo(f"生成的 SQL（尝试 {result.attempts} 次）：\n{result.sql}\n")

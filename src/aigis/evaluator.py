@@ -2,10 +2,12 @@
 """评估器：跑 eval/questions.yaml 题集，统计执行成功率 / 自修复命中率 / 人工标注准确率。"""
 from pathlib import Path
 
+import psycopg
 import typer
 import yaml
 
 from aigis.config import load_config
+from aigis.llm import LLMError
 from aigis.repair import run_query
 
 app = typer.Typer(add_completion=False, help="AI-GIS 题集评估（执行成功率/自修复/人工准确率）")
@@ -20,7 +22,19 @@ def run_eval(questions: list[dict], cfg, progress: bool = True) -> dict:
     """
     results, repaired = [], 0
     for q in questions:
-        out = run_query(q["question"], cfg)
+        try:
+            out = run_query(q["question"], cfg)
+        except (psycopg.OperationalError, LLMError) as e:
+            # 单题外部失败（DB 断连/LLM 故障）：记 FAIL 继续，不中断整轮
+            results.append({"id": q["id"], "category": q.get("category", ""),
+                            "question": q["question"], "ok": False,
+                            "attempts": 0, "sql": "", "rows": 0,
+                            "in_range": None, "sample_rows": [],
+                            "human_pass": q.get("human_pass"),
+                            "error": str(e)})
+            if progress:
+                typer.echo(f"[{q['id']}] FAIL 异常：{e}")
+            continue
         if out.ok and out.attempts > 1:
             repaired += 1
         in_range = None
