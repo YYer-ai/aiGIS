@@ -84,7 +84,7 @@
   category: 距离查询
   expected_semantics: 锚点 name LIKE '%北京南站%' ST_DWithin(geography, 1000) osm_pois(shop=convenience) count
   expect_rows_range: [5, 100]
-  human_pass: false
+  human_pass: true  # 订正(2026-08-26)：真库核实北京南站在 pois 有锚点，count 0 为真实数据（最近便利店1134m>1000m），SQL 语义正确
 - id: 13
   question: 距首都机场3公里内有哪些加油站
   category: 距离查询
