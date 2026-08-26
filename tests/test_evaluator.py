@@ -74,3 +74,33 @@ def test_run_eval_in_range_non_numeric_cell(monkeypatch):
     questions = [{"id": 1, "question": "面积多少", "expect_rows_range": [10, 100]}]
     rep = run_eval(questions, Config(), progress=False)  # 修复前此处 TypeError
     assert rep["results"][0]["in_range"] is None
+
+
+def test_run_eval_sample_rows_and_report(tmp_path, monkeypatch):
+    """results 每项带 category/sample_rows（前3行、每行截120字符）；write_report 落盘含明细与统计。"""
+    rows = [(f"行{i}", i * 1.5) for i in range(1, 6)]
+    outs = {"多行": Outcome(question="多行", ok=True, attempts=1, rows=rows),
+            "失败|带竖线": Outcome(question="失败|带竖线", ok=False, attempts=2,
+                                  error="语法错误", sql="SELECT *\nFROM t | x")}
+    monkeypatch.setattr("aigis.evaluator.run_query", _make_run_query(outs))
+    questions = [
+        {"id": 1, "category": "最近邻", "question": "多行", "expect_rows_range": [1, 3]},
+        {"id": 2, "category": "地名模糊", "question": "失败|带竖线"},
+    ]
+    rep = run_eval(questions, Config(), progress=False)
+    r = rep["results"][0]
+    assert r["category"] == "最近邻"
+    assert r["sample_rows"] == [repr(x)[:120] for x in rows[:3]]
+    assert len(r["sample_rows"]) == 3
+    assert rep["results"][1]["sample_rows"] == []
+
+    from aigis.evaluator import write_report
+    p = tmp_path / "report.md"
+    write_report(rep, str(p))
+    text = p.read_text(encoding="utf-8")
+    assert "| id | category | ok | attempts | rows | in_range | question | SQL | 结果前3行 |" in text
+    assert "总计 2 | 执行成功 1 | 经自修复 0" in text          # ok 且 attempts>1 才算 repaired
+    assert "`SELECT * FROM t \\| x`" in text                  # SQL 压缩单行、竖线转义
+    assert "失败\\|带竖线" in text and "行1" in text
+    assert "in_range 异常题号（False）：[1]" in text           # 题1 行数5 超区间[1,3]
+    assert "失败题号：[2]" in text
