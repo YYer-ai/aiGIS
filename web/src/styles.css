@@ -140,11 +140,129 @@ html, body, #root {
   cursor: not-allowed;
 }
 
-/* 右 60%：地图面板（Task 4 替换） */
+/* 右 60%：地图面板 */
 .map-panel {
+  position: relative;
   flex: 1;
+  min-width: 0;
+}
+
+.map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* 图层卡片：地图右上角浮层 */
+.layer-cards {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 280px;
+}
+
+.layer-card {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(34, 37, 45, 0.92);
+  border: 1px solid #33363f;
+  border-radius: 8px;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.layer-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.layer-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layer-count {
+  color: #9aa0ac;
+  font-size: 12px;
+  flex: none;
+}
+
+/* 可见性开关 */
+.layer-eye {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  cursor: pointer;
+}
+
+.layer-eye input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.layer-eye-track {
+  width: 28px;
+  height: 14px;
+  border-radius: 7px;
+  background: #3a3f4b;
+  position: relative;
+  transition: background 0.15s;
+}
+
+.layer-eye-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #9aa0ac;
+  transition: left 0.15s, background 0.15s;
+}
+
+.layer-eye input:checked + .layer-eye-track {
+  background: #2f6fdb;
+}
+
+.layer-eye input:checked + .layer-eye-track::after {
+  left: 16px;
+  background: #fff;
+}
+
+.layer-del {
+  flex: none;
+  border: none;
+  background: transparent;
+  color: #9aa0ac;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.layer-del:hover {
+  color: #ff6b6b;
+}
+
+.layer-empty {
+  padding: 8px 12px;
+  background: rgba(34, 37, 45, 0.85);
+  border: 1px solid #33363f;
+  border-radius: 8px;
+  font-size: 13px;
   color: #9aa0ac;
 }
