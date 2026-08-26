@@ -50,3 +50,7 @@
 # --- 按类别计数聚合 x1 ---
 - question: 三环内各类设施的数量统计
   sql: "SELECT amenity, count(*) AS cnt FROM osm_pois p JOIN ring_areas r ON r.ring_name='三环' WHERE ST_Contains(r.geom, p.geom) AND amenity IS NOT NULL GROUP BY amenity ORDER BY cnt DESC"
+
+# --- 锚点两级回退 x1（面状地物可能只在 osm_areas：点表 miss 时回退 ST_Centroid 面表）---
+- question: 距北京南站1公里内有多少家便利店
+  sql: "SELECT count(*) AS cnt FROM osm_pois p WHERE p.shop='convenience' AND ST_DWithin(p.geom::geography, COALESCE((SELECT geom FROM osm_pois WHERE name LIKE '%北京南站%' ORDER BY osm_id LIMIT 1), (SELECT ST_Centroid(geom) FROM osm_areas WHERE name LIKE '%北京南站%' ORDER BY osm_id LIMIT 1)), 1000)"

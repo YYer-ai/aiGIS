@@ -102,6 +102,16 @@ def test_run_eval_in_range_non_numeric_cell(monkeypatch):
     assert rep["results"][0]["in_range"] is None
 
 
+def test_run_eval_in_range_decimal_cell(monkeypatch):
+    """单行单列返回 Decimal（psycopg numeric 列映射为 Decimal）：可粗检，in_range=True。"""
+    from decimal import Decimal
+    outs = {"平均路宽": Outcome(question="平均路宽", ok=True, attempts=1, rows=[(Decimal("7.75"),)])}
+    monkeypatch.setattr("aigis.evaluator.run_query", _make_run_query(outs))
+    questions = [{"id": 1, "question": "平均路宽", "expect_rows_range": [5, 10]}]
+    rep = run_eval(questions, Config(), progress=False)  # 修复前 Decimal 被 isinstance 拒绝 → None
+    assert rep["results"][0]["in_range"] is True
+
+
 def test_run_eval_sample_rows_and_report(tmp_path, monkeypatch):
     """results 每项带 category/sample_rows（前3行、每行截120字符）；write_report 落盘含明细与统计。"""
     rows = [(f"行{i}", i * 1.5) for i in range(1, 6)]

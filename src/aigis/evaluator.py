@@ -1,5 +1,6 @@
 # src/aigis/evaluator.py
 """评估器：跑 eval/questions.yaml 题集，统计执行成功率 / 自修复命中率 / 人工标注准确率。"""
+from decimal import Decimal
 from pathlib import Path
 
 import psycopg
@@ -41,7 +42,7 @@ def run_eval(questions: list[dict], cfg, progress: bool = True) -> dict:
         if out.ok and q.get("expect_rows_range") and out.rows:
             lo, hi = q["expect_rows_range"]
             n = out.rows[0][0] if len(out.rows) == 1 and len(out.rows[0]) == 1 else len(out.rows)
-            in_range = lo <= n <= hi if isinstance(n, (int, float)) else None
+            in_range = lo <= n <= hi if isinstance(n, (int, float, Decimal)) else None
         results.append({"id": q["id"], "category": q.get("category", ""),
                         "question": q["question"], "ok": out.ok,
                         "attempts": out.attempts, "sql": out.sql,
