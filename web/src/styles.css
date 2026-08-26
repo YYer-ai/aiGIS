@@ -6,17 +6,145 @@ html, body, #root {
 .console {
   display: flex;
   height: 100%;
-}
-
-.chat-panel {
-  flex: 0 0 380px;
-  border-right: 1px solid #d0d0d0;
-  padding: 12px;
+  background: #1b1d23;
+  color: #e6e6e6;
   font-family: system-ui, sans-serif;
 }
 
+/* 左 40%：对话面板 */
+.chat-panel {
+  flex: 0 0 40%;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #33363f;
+  min-width: 0;
+}
+
+.chat-header {
+  padding: 12px 16px;
+  font-weight: 600;
+  border-bottom: 1px solid #33363f;
+  background: #22252d;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.msg {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.msg-user {
+  align-self: flex-end;
+  background: #2f6fdb;
+  color: #fff;
+}
+
+.msg-assistant {
+  align-self: flex-start;
+  background: #262a33;
+}
+
+.msg-loading {
+  color: #9aa0ac;
+  font-style: italic;
+}
+
+.msg-error {
+  color: #ff6b6b;
+}
+
+.msg-meta {
+  font-size: 12px;
+  color: #9aa0ac;
+  margin-bottom: 6px;
+}
+
+.msg-details {
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.msg-details summary {
+  cursor: pointer;
+  color: #8ab4f8;
+  user-select: none;
+}
+
+.msg-code {
+  margin: 6px 0 0;
+  padding: 8px;
+  background: #16181d;
+  border: 1px solid #33363f;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: Consolas, Menlo, monospace;
+  font-size: 12px;
+  color: #c8e1ff;
+  white-space: pre;
+}
+
+.msg-reasoning {
+  margin-top: 6px;
+  color: #b8bdc7;
+  white-space: pre-wrap;
+}
+
+.chat-input {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #33363f;
+  background: #22252d;
+}
+
+.chat-input input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #33363f;
+  border-radius: 6px;
+  background: #16181d;
+  color: #e6e6e6;
+  font-size: 14px;
+}
+
+.chat-input input:focus {
+  outline: none;
+  border-color: #2f6fdb;
+}
+
+.chat-input button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #2f6fdb;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.chat-input button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 右 60%：地图面板（Task 4 替换） */
 .map-panel {
   flex: 1;
-  padding: 12px;
-  font-family: system-ui, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9aa0ac;
 }
