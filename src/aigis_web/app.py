@@ -22,7 +22,7 @@ def _db_error_message(e: psycopg.OperationalError) -> str:
 def _to_response(out) -> QueryResponse:
     return QueryResponse(sql=out.sql, reasoning=out.reasoning, attempts=out.attempts,
                          ok=out.ok, row_count=len(out.rows), columns=out.columns,
-                         sample_rows=[[repr(v) for v in row] for row in out.rows[:10]],
+                         sample_rows=[[str(v) for v in row] for row in out.rows[:10]],
                          geojson=out.geojson, error=out.error)
 
 

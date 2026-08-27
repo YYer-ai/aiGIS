@@ -15,7 +15,7 @@ def test_query_ok():
         assert r.status_code == 200
         body = r.json()
         assert body["ok"] and body["row_count"] == 2 and body["sql"] == "SELECT 1"
-        assert body["sample_rows"] == [["292"], ["7"]]  # 前 10 行 repr，供前端表格
+        assert body["sample_rows"] == [["292"], ["7"]]  # 前 10 行 str(v)，供前端表格
 
 def test_query_llm_error_502():
     from aigis.llm import LLMError
