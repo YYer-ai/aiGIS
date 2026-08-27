@@ -12,6 +12,8 @@ class Config:
     db_password: str = "aigis_readonly"
     admin_user: str = "aigis"             # 导出 schema / 预处理
     admin_password: str = "aigis_dev_2026"
+    maker_user: str = "aigis_maker"       # 制作写通道（仅 user_layers schema 可写）
+    maker_password: str = "aigis_maker"
     llm_api_key: str = ""
     llm_base_url: str = "http://223.92.35.113:8001/v1"
     llm_model: str = "qwen3827b"
@@ -28,6 +30,8 @@ def load_config(env_file: str | None = None) -> Config:
         db_name=os.getenv("POSTGRES_DB", "aigis"),
         admin_user=os.getenv("POSTGRES_USER", "aigis"),
         admin_password=os.getenv("POSTGRES_PASSWORD", "aigis_dev_2026"),
+        maker_user=os.getenv("MAKER_USER", "aigis_maker"),
+        maker_password=os.getenv("MAKER_PASSWORD", "aigis_maker"),
         llm_api_key=os.getenv("LLM_API_KEY", ""),
         llm_base_url=os.getenv("LLM_BASE_URL", "http://223.92.35.113:8001/v1"),
         llm_model=os.getenv("LLM_MODEL", "qwen3827b"),

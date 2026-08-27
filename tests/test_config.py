@@ -7,6 +7,7 @@ def test_defaults():
     assert c.db_host == "localhost" and c.db_port == 5432 and c.db_name == "aigis"
     assert c.db_user == "aigis_readonly"      # 引擎执行账号
     assert c.admin_user == "aigis"             # 管理账号（schema 导出/预处理）
+    assert c.maker_user == "aigis_maker"       # 制作写通道账号（仅 user_layers 可写）
     assert c.llm_model == "qwen3827b"
 
 def test_load_env(tmp_path: Path, monkeypatch):
@@ -33,3 +34,14 @@ def test_db_credentials_default_when_unset(tmp_path: Path, monkeypatch):
     c = load_config(str(tmp_path / "none.env"))  # 不存在的 env 文件：不注入任何值
     assert c.admin_user == "aigis" and c.admin_password == "aigis_dev_2026"
     assert c.db_user == "aigis_readonly" and c.db_password == "aigis_readonly"
+
+def test_maker_env_override(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("MAKER_USER", "maker_env")
+    monkeypatch.setenv("MAKER_PASSWORD", "maker_pw_env")
+    c = load_config(str(tmp_path / "none.env"))
+    assert c.maker_user == "maker_env" and c.maker_password == "maker_pw_env"
+    monkeypatch.delenv("MAKER_USER", raising=False)
+    monkeypatch.delenv("MAKER_PASSWORD", raising=False)
+    c = load_config(str(tmp_path / "none.env"))
+    # 无环境变量时恒为 maker 默认，不走 .env，保住写通道凭据可预期
+    assert c.maker_user == "aigis_maker" and c.maker_password == "aigis_maker"
