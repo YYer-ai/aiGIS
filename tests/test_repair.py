@@ -2,7 +2,7 @@
 from unittest.mock import MagicMock
 import pytest
 from aigis.config import Config
-from aigis.repair import run_query
+from aigis.repair import run_query, run_query_stream
 
 # GOOD 用白名单表 osm_pois（真库 28074 行）：spatial_ref_sys 不在 DEFAULT_TABLES
 # 白名单内，会被 validator 拒绝，无法走通"修复后成功"路径
@@ -36,3 +36,35 @@ def test_execution_error_refeed_recovers():
     provider.generate.side_effect = [DIV0, GOOD]
     out = run_query("x", Config(), provider=provider)
     assert out.attempts == 2 and out.ok and out.rows[0][0] > 8000
+
+
+def test_run_query_stream_recovers_and_streams_every_round(monkeypatch):
+    """流式版自修复：BAD→GOOD 仍修复成功；全部轮次的 delta 与 status 都回调。"""
+    monkeypatch.setattr("aigis.repair._cached_schema", lambda cfg: "SCHEMA")
+    ok_result = MagicMock(ok=True, columns=["n"], rows=[(42,)])
+    monkeypatch.setattr("aigis.repair.execute_readonly",
+                        lambda sql, cfg: ok_result)
+    provider = MagicMock()
+    provider.generate_stream.side_effect = [
+        iter(['{"sql":"SELECT * FROM nope",', '"reasoning":"x"}']),
+        iter(['{"sql":"SELECT count(*) AS n FROM osm_pois",', '"reasoning":"ok"}']),
+    ]
+    deltas: list[str] = []
+    statuses: list[str] = []
+    out = run_query_stream("有多少兴趣点", Config(), on_delta=deltas.append,
+                           on_status=statuses.append, provider=provider)
+    assert out.ok and out.attempts == 2 and out.rows == [(42,)]
+    assert out.geojson["features"][0]["properties"]["n"] == 42
+    assert "".join(deltas) == BAD + GOOD  # 全部轮次都推送（前端按轮次重置）
+    assert len(deltas) == 4
+    assert statuses == ["生成SQL（第1次）", "生成SQL（第2次）", "执行查询"]
+
+
+def test_run_query_stream_gives_up_without_callbacks(monkeypatch):
+    """on_delta/on_status 均缺省时不崩，重试耗尽返回失败 Outcome。"""
+    monkeypatch.setattr("aigis.repair._cached_schema", lambda cfg: "SCHEMA")
+    provider = MagicMock()
+    provider.generate.side_effect = lambda *a: BAD  # 无回调 → 走非流式分支
+    provider.generate_stream.side_effect = lambda *a: iter([BAD])
+    out = run_query_stream("x", Config(), max_retries=2, provider=provider)
+    assert not out.ok and out.attempts == 2 and "nope" in out.error

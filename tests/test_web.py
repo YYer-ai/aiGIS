@@ -42,3 +42,50 @@ def test_empty_question_422():
     c = TestClient(create_app())
     r = c.post("/api/query", json={"question": "  "})
     assert r.status_code == 422
+
+
+def _stream_lines(client, q):
+    with client.stream("GET", "/api/query/stream", params={"q": q}) as r:
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith("text/event-stream")
+        return list(r.iter_lines())
+
+
+def test_stream_event_sequence():
+    """SSE 事件按序：status(理解问题) → status(生成SQL) → delta → result。"""
+    seen_questions = []
+
+    def fake_run(question, cfg, on_delta=None, on_status=None, **kw):
+        seen_questions.append(question)  # 中文 q 经 URL 解码后原样到达
+        on_status("生成SQL（第1次）")
+        on_delta("SELECT 1")
+        return _mock_outcome(rows=[(292,)],
+                             geojson={"type": "FeatureCollection", "features": []})
+
+    with patch("aigis_web.app.run_query_stream", side_effect=fake_run):
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "三环内有多少个公园")
+
+    assert seen_questions == ["三环内有多少个公园"]
+    events = [l for l in lines if l.startswith("event: ")]
+    assert events == ["event: status", "event: status", "event: delta", "event: result"]
+    joined = "\n".join(lines)
+    assert '{"stage": "理解问题"}' in joined
+    assert '{"stage": "生成SQL（第1次）"}' in joined
+    assert '{"text": "SELECT 1"}' in joined
+    assert '"sql": "SELECT 1"' in joined and '"ok": true' in joined
+
+
+def test_stream_llm_error_event():
+    from aigis.llm import LLMError
+    with patch("aigis_web.app.run_query_stream", side_effect=LLMError("缺少 LLM_API_KEY")):
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "x")
+    assert "event: error" in lines
+    assert "LLM_API_KEY" in "\n".join(lines)
+
+
+def test_stream_empty_q_422():
+    c = TestClient(create_app())
+    r = c.get("/api/query/stream", params={"q": "   "})
+    assert r.status_code == 422 and "问题不能为空" in r.json()["error"]

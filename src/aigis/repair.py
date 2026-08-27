@@ -1,6 +1,7 @@
 # src/aigis/repair.py
 """自修复回环：组装 prompt → LLM 生成 JSON → 校验 → 只读执行 → 失败回喂重试 ≤3 次 → GeoJSON。"""
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from aigis.config import Config
@@ -31,17 +32,33 @@ def _parse_llm_json(text: str) -> tuple[str, str]:
     return data["sql"], data.get("reasoning", "")
 
 
-def run_query(question: str, cfg: Config, max_retries: int = 3, provider=None) -> Outcome:
+def _fetch(provider, system: str, user: str,
+           on_delta: Callable[[str], None] | None) -> str:
+    """无回调走 generate；有回调走 generate_stream 并逐 delta 推送。"""
+    if on_delta is None:
+        return provider.generate(system, user)
+    parts: list[str] = []
+    for d in provider.generate_stream(system, user):
+        parts.append(d)
+        on_delta(d)
+    return "".join(parts)
+
+
+def _run(question: str, cfg: Config, max_retries: int, provider,
+         on_delta: Callable[[str], None] | None = None,
+         on_status: Callable[[str], None] | None = None) -> Outcome:
     out = Outcome(question=question)
     provider = provider or make_provider(cfg)
     schema_text = _cached_schema(cfg)
     feedback = ""
     for attempt in range(1, max_retries + 1):
         out.attempts = attempt
+        if on_status:
+            on_status(f"生成SQL（第{attempt}次）")
         msgs = build_messages(
             question + (f"\n\n上次尝试失败，信息：{feedback}" if feedback else ""),
             schema_text)
-        raw = provider.generate(msgs[0]["content"], msgs[1]["content"])
+        raw = _fetch(provider, msgs[0]["content"], msgs[1]["content"], on_delta)
         try:
             sql, reasoning = _parse_llm_json(raw)
         except (ValueError, KeyError) as e:  # JSONDecodeError 是 ValueError 子类
@@ -54,6 +71,8 @@ def run_query(question: str, cfg: Config, max_retries: int = 3, provider=None) -
             feedback = f"校验未通过：{reason}"
             out.error = feedback
             continue
+        if on_status:
+            on_status("执行查询")
         result = execute_readonly(sql, cfg)
         if result.ok:
             out.ok, out.columns, out.rows = True, result.columns, result.rows
@@ -62,6 +81,18 @@ def run_query(question: str, cfg: Config, max_retries: int = 3, provider=None) -
         feedback = f"数据库执行错误：{result.error}"
         out.error = feedback
     return out
+
+
+def run_query(question: str, cfg: Config, max_retries: int = 3, provider=None) -> Outcome:
+    return _run(question, cfg, max_retries, provider)
+
+
+def run_query_stream(question: str, cfg: Config,
+                     on_delta: Callable[[str], None] | None = None,
+                     on_status: Callable[[str], None] | None = None,
+                     max_retries: int = 3, provider=None) -> Outcome:
+    """与 run_query 同构的流式版：全部轮次的 LLM delta 逐段回调 on_delta。"""
+    return _run(question, cfg, max_retries, provider, on_delta, on_status)
 
 
 # 模块级缓存：同一数据库的 schema 只导出一次（重试/多次查询共享）

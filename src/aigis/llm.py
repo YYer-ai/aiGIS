@@ -1,6 +1,6 @@
 # src/aigis/llm.py
 import time
-from typing import Protocol
+from typing import Iterator, Protocol
 from openai import OpenAI, APITimeoutError, APIConnectionError, APIStatusError
 from aigis.config import Config
 
@@ -32,6 +32,29 @@ class OpenAICompatProvider:
                     f"LLM API 返回错误 {e.status_code}：{e.message}"
                     "——请检查 key 与账户余额")
             # openai 3.x 的 APITimeoutError 不继承内建 TimeoutError，需一并捕获
+            except (APITimeoutError, APIConnectionError, TimeoutError):
+                if attempt == 2:
+                    raise LLMError(
+                        "LLM API 连接失败（已重试一次），请检查网络与 LLM_API_KEY")
+                time.sleep(2)
+
+    def generate_stream(self, system: str, user: str) -> Iterator[str]:
+        """流式生成：逐 delta 内容片段 yield（异常处理与 generate 一致，重试一次）。"""
+        for attempt in (1, 2):
+            try:
+                stream = self._cli.chat.completions.create(
+                    model=self.model, temperature=0, stream=True,
+                    messages=[{"role": "system", "content": system},
+                              {"role": "user", "content": user}])
+                for chunk in stream:
+                    delta = chunk.choices[0].delta.content
+                    if delta is not None:
+                        yield delta
+                return
+            except APIStatusError as e:
+                raise LLMError(
+                    f"LLM API 返回错误 {e.status_code}：{e.message}"
+                    "——请检查 key 与账户余额")
             except (APITimeoutError, APIConnectionError, TimeoutError):
                 if attempt == 2:
                     raise LLMError(

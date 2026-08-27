@@ -50,3 +50,38 @@ def test_status_error_becomes_llmerror_no_retry():
         p.generate("s", "u")
     assert "余额" in str(exc_info.value)
     fake.chat.completions.create.assert_called_once()
+
+
+def _chunk(text):
+    c = MagicMock()
+    c.choices = [MagicMock(delta=MagicMock(content=text))]
+    return c
+
+
+def test_generate_stream_yields_deltas_skipping_none():
+    fake = MagicMock()
+    fake.chat.completions.create.return_value = iter(
+        [_chunk("SEL"), _chunk(None), _chunk("ECT 1")])
+    p = OpenAICompatProvider("https://x", "k", "m", client=fake)
+    parts = list(p.generate_stream("sys", "user"))
+    assert parts == ["SEL", "ECT 1"]  # None delta（如 role 帧）被跳过
+    assert "".join(parts) == "SELECT 1"
+    assert fake.chat.completions.create.call_args.kwargs["stream"] is True
+
+
+def test_generate_stream_retry_once_on_timeout(monkeypatch):
+    monkeypatch.setattr("aigis.llm.time.sleep", lambda s: None)
+    fake = MagicMock()
+    fake.chat.completions.create.side_effect = [TimeoutError, iter([_chunk("ok")])]
+    p = OpenAICompatProvider("https://x", "k", "m", client=fake)
+    assert "".join(p.generate_stream("s", "u")) == "ok"
+
+
+def test_generate_stream_second_timeout_raises_llmerror(monkeypatch):
+    monkeypatch.setattr("aigis.llm.time.sleep", lambda s: None)
+    fake = MagicMock()
+    fake.chat.completions.create.side_effect = [TimeoutError, TimeoutError]
+    p = OpenAICompatProvider("https://x", "k", "m", client=fake)
+    with pytest.raises(LLMError, match="连接失败"):
+        "".join(p.generate_stream("s", "u"))
+    assert fake.chat.completions.create.call_count == 2
