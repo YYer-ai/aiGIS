@@ -33,13 +33,14 @@ function dispatchFrame(frame, h) {
   }
   if (event === "status") h.onStatus?.(data.stage);
   else if (event === "delta") h.onDelta?.(data.text);
+  else if (event === "answer_delta") h.onAnswerDelta?.(data.text);
   else if (event === "result") h.onResult?.(data);
   else if (event === "error") h.onError?.(new Error(data.error || "查询失败"));
 }
 
 /**
  * SSE 流式提问：GET /api/query/stream?q=...
- * handlers: { onStatus(stage), onDelta(text), onResult(res), onError(err) }
+ * handlers: { onStatus(stage), onDelta(text), onAnswerDelta(text), onResult(res), onError(err) }
  */
 export async function streamQuery(question, handlers = {}) {
   let r;

@@ -7,8 +7,9 @@ const EXAMPLES = [
   "五环内面积最大的三个公园",
 ];
 
-// 终态结果呈现：单行单列 → 大数字卡片；多行 → 前 10 行表格；其余照旧
-function ResultBody({ res }) {
+// 终态结果呈现：默认 answer 文本 + 单值大数字卡片 + meta 一行；SQL/推理/多行表格收进"详情"折叠
+function ResultBody({ res, answer }) {
+  const [showDetail, setShowDetail] = useState(false);
   const single = res.ok && res.row_count === 1 && res.columns.length === 1;
   const table = res.ok && !single && res.sample_rows?.length > 0;
   // 隐藏 geometry 列（GeoJSON 长文本，几何已由地图承载）；全列均为 geometry 时退回原列防全空
@@ -17,51 +18,61 @@ function ResultBody({ res }) {
   const columns = hidden ? res.columns.filter((_, i) => !hidden.has(i)) : res.columns;
   return (
     <div className="msg-body">
-      {single ? (
+      {answer && <div className="msg-answer">{answer}</div>}
+      {single && (
         <div className="big-number-card">
           <div className="big-number-label">{res.columns[0]}</div>
           <div className="big-number-value">
             {res.sample_rows?.[0]?.[0] ?? res.row_count}
           </div>
         </div>
-      ) : table ? (
-        <div className="msg-table-wrap">
-          <table className="msg-table">
-            <thead>
-              <tr>{columns.map((c, i) => <th key={i}>{c}</th>)}</tr>
-            </thead>
-            <tbody>
-              {res.sample_rows.map((row, r) => (
-                <tr key={r}>{row.map((v, i) => hidden?.has(i) ? null : <td key={i}>{v}</td>)}</tr>
-              ))}
-            </tbody>
-          </table>
-          {res.row_count > res.sample_rows.length && (
-            <div className="msg-table-more">共 {res.row_count} 行，仅显示前 {res.sample_rows.length} 行</div>
-          )}
-        </div>
-      ) : null}
+      )}
       <div className="msg-meta">
         查询成功 · {res.row_count} 行 · 尝试 {res.attempts} 次
       </div>
-      {res.sql && (
-        <details className="msg-details" open>
-          <summary>SQL</summary>
-          <pre className="msg-code"><code>{res.sql}</code></pre>
-        </details>
-      )}
-      {res.reasoning && (
-        <details className="msg-details">
-          <summary>推理过程</summary>
-          <div className="msg-reasoning">{res.reasoning}</div>
-        </details>
+      <button type="button" className="msg-detail-toggle" onClick={() => setShowDetail((v) => !v)}>
+        详情 {showDetail ? "▴" : "▾"}
+      </button>
+      {showDetail && (
+        <div className="msg-detail-body">
+          {res.sql && (
+            <>
+              <div className="msg-detail-label">SQL</div>
+              <pre className="msg-code"><code>{res.sql}</code></pre>
+            </>
+          )}
+          {res.reasoning && (
+            <>
+              <div className="msg-detail-label">推理过程</div>
+              <div className="msg-reasoning">{res.reasoning}</div>
+            </>
+          )}
+          {table && (
+            <div className="msg-table-wrap">
+              <table className="msg-table">
+                <thead>
+                  <tr>{columns.map((c, i) => <th key={i}>{c}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {res.sample_rows.map((row, r) => (
+                    <tr key={r}>{row.map((v, i) => hidden?.has(i) ? null : <td key={i}>{v}</td>)}</tr>
+                  ))}
+                </tbody>
+              </table>
+              {res.row_count > res.sample_rows.length && (
+                <div className="msg-table-more">共 {res.row_count} 行，仅显示前 {res.sample_rows.length} 行</div>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
-// 流式中的助手消息：阶段 + 已耗时 + 逐字增长的 SQL
-function StreamingMessage({ stage, sql, elapsed }) {
+// 流式中的助手消息：阶段 + 已耗时 + SQL 浅色小字（总结阶段收起 SQL、显示 answer 逐字）
+function StreamingMessage({ stage, sql, answer, elapsed }) {
+  const summarizing = stage === "总结中" || Boolean(answer);
   return (
     <div className="msg-body">
       <div className="msg-stage">
@@ -70,9 +81,14 @@ function StreamingMessage({ stage, sql, elapsed }) {
       <div className="msg-elapsed">
         已用时 {elapsed} 秒 · 通常 10-25 秒
       </div>
-      {sql && (
-        <pre className="msg-code msg-code-streaming"><code>{sql}</code></pre>
-      )}
+      {summarizing ? (
+        answer ? <div className="msg-answer msg-answer-streaming">{answer}</div> : null
+      ) : sql ? (
+        <div className="msg-sql-ghost">
+          <span className="msg-sql-ghost-label">SQL 生成中…</span>
+          <code>{sql}</code>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -103,7 +119,7 @@ export default function ChatPanel({ onResult }) {
     setMessages((m) => [
       ...m,
       { role: "user", text: question },
-      { role: "assistant", streaming: true, stage: "理解问题", sql: "", res: null },
+      { role: "assistant", streaming: true, stage: "理解问题", sql: "", answer: "", res: null },
     ]);
     setLoading(true);
     setElapsed(0);
@@ -120,6 +136,11 @@ export default function ChatPanel({ onResult }) {
       onDelta: (text) => {
         setMessages((prev) =>
           prev.map((m, i) => (i === prev.length - 1 ? { ...m, sql: (m.sql || "") + text } : m))
+        );
+      },
+      onAnswerDelta: (text) => {
+        setMessages((prev) =>
+          prev.map((m, i) => (i === prev.length - 1 ? { ...m, answer: (m.answer || "") + text } : m))
         );
       },
       onResult: (res) => {
@@ -167,10 +188,11 @@ export default function ChatPanel({ onResult }) {
           ) : (
             <div key={i} className="msg msg-assistant">
               {m.streaming ? (
-                <StreamingMessage stage={m.stage} sql={m.sql} elapsed={elapsed} />
+                <StreamingMessage stage={m.stage} sql={m.sql} answer={m.answer} elapsed={elapsed} />
               ) : m.res ? (
                 m.res.ok ? (
-                  <ResultBody res={m.res} />
+                  // answer 优先取 result 事件返回值，旧缓存缺字段时退回流式累积文本
+                  <ResultBody res={m.res} answer={m.res.answer || m.answer} />
                 ) : (
                   <div className="msg-error">{m.res.error || "查询失败"}</div>
                 )

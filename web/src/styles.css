@@ -89,8 +89,17 @@ html, body, #root {
   color: #9aa0ac;
 }
 
-/* 流式 SQL 块：末尾光标 */
-.msg-code-streaming code::after {
+/* 自然语言回答（默认正文呈现） */
+.msg-answer {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e6e6e6;
+  white-space: pre-wrap;
+  margin-bottom: 6px;
+}
+
+/* 总结阶段 answer 逐字流式：末尾光标 */
+.msg-answer-streaming::after {
   content: "▍";
   color: #8ab4f8;
   animation: blink 1s step-start infinite;
@@ -98,6 +107,29 @@ html, body, #root {
 
 @keyframes blink {
   50% { opacity: 0; }
+}
+
+/* 流式 SQL 浅色小字（弱化进度，总结阶段收起入详情） */
+.msg-sql-ghost {
+  margin-top: 6px;
+  font-family: Consolas, Menlo, monospace;
+  font-size: 11px;
+  color: #6f7683;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.msg-sql-ghost-label {
+  display: block;
+  font-family: system-ui, sans-serif;
+  color: #8b919d;
+  margin-bottom: 2px;
+}
+
+.msg-sql-ghost code::after {
+  content: "▍";
+  color: #8ab4f8;
+  animation: blink 1s step-start infinite;
 }
 
 /* 空状态与示例 chips */
@@ -237,15 +269,32 @@ html, body, #root {
   margin-bottom: 6px;
 }
 
-.msg-details {
-  margin-top: 6px;
-  font-size: 13px;
+/* "详情"折叠按钮（默认收起，内含 SQL/推理/表格） */
+.msg-detail-toggle {
+  margin-top: 2px;
+  padding: 2px 10px;
+  background: transparent;
+  border: 1px solid #3a3f4b;
+  border-radius: 12px;
+  color: #8ab4f8;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
 }
 
-.msg-details summary {
-  cursor: pointer;
+.msg-detail-toggle:hover {
+  border-color: #2f6fdb;
+  background: #22252d;
+}
+
+.msg-detail-body {
+  margin-top: 8px;
+}
+
+.msg-detail-label {
+  margin-top: 6px;
+  font-size: 12px;
   color: #8ab4f8;
-  user-select: none;
 }
 
 .msg-code {
