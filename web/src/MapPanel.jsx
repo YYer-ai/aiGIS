@@ -53,6 +53,25 @@ const TYPE_FILTER = {
   pg: ["==", "$type", "Polygon"],
 };
 
+/** popup HTML 转义（属性键值均来自 DB，防注入） */
+const escapeHtml = (v) =>
+  String(v).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/** 要素点击 → 属性键值表 popup（pt/ln/pg 子层共用） */
+const onFeatureClick = (e) => {
+  const f = e.features?.[0];
+  if (!f) return;
+  const rows = Object.entries(f.properties || {})
+    .map(([k, v]) => `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`)
+    .join("");
+  const html = rows ? `<table class="popup-table">${rows}</table>` : "<i>无属性</i>";
+  new maplibregl.Popup({ closeButton: false, maxWidth: "300px" })
+    .setLngLat(e.lngLat)
+    .setHTML(html)
+    .addTo(e.target);
+};
+
 /**
  * 地图画布：MapLibre 底图 + 查询结果 GeoJSON 图层叠加与管理。
  * props: layers=[{id, name, geojson, visible, color?}], onToggle(id), onRemove(id)
@@ -138,6 +157,14 @@ export default function MapPanel({ layers = [], onToggle, onRemove }) {
             id: `${srcId}-pg-outline`, type: "line", source: srcId, filter: TYPE_FILTER.pg,
             paint: { "line-color": color, "line-width": 1.5 },
           });
+        }
+        // 要素交互（仅新图层绑一次，只挂 pt/ln/pg——pg-outline 不挂避免边界处重复弹窗）：
+        // 点击属性表 popup + hover 手型
+        for (const sub of [`${srcId}-pt`, `${srcId}-ln`, `${srcId}-pg`]) {
+          if (!map.getLayer(sub)) continue;
+          map.on("click", sub, onFeatureClick);
+          map.on("mouseenter", sub, () => { map.getCanvas().style.cursor = "pointer"; });
+          map.on("mouseleave", sub, () => { map.getCanvas().style.cursor = ""; });
         }
       }
       // 可见性开关（对全部子图层生效）

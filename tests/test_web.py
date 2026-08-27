@@ -9,12 +9,13 @@ def _mock_outcome(ok=True, rows=None, geojson=None, error=""):
     return m
 
 def test_query_ok():
-    with patch("aigis_web.app.run_query", return_value=_mock_outcome(rows=[(292,)], geojson={"type": "FeatureCollection", "features": []})):
+    with patch("aigis_web.app.run_query", return_value=_mock_outcome(rows=[(292,), (7,)], geojson={"type": "FeatureCollection", "features": []})):
         c = TestClient(create_app())
         r = c.post("/api/query", json={"question": "三环内有多少个公园"})
         assert r.status_code == 200
         body = r.json()
-        assert body["ok"] and body["row_count"] == 1 and body["sql"] == "SELECT 1"
+        assert body["ok"] and body["row_count"] == 2 and body["sql"] == "SELECT 1"
+        assert body["sample_rows"] == [["292"], ["7"]]  # 前 10 行 repr，供前端表格
 
 def test_query_llm_error_502():
     from aigis.llm import LLMError
@@ -59,6 +60,7 @@ def test_stream_event_sequence():
         seen_questions.append(question)  # 中文 q 经 URL 解码后原样到达
         on_status("生成SQL（第1次）")
         on_delta("SELECT 1")
+        on_delta(" FR\nOM parks")  # 含换行的 chunk：SSE data 内 JSON 转义后应原样往返
         return _mock_outcome(rows=[(292,)],
                              geojson={"type": "FeatureCollection", "features": []})
 
@@ -68,12 +70,14 @@ def test_stream_event_sequence():
 
     assert seen_questions == ["三环内有多少个公园"]
     events = [l for l in lines if l.startswith("event: ")]
-    assert events == ["event: status", "event: status", "event: delta", "event: result"]
+    assert events == ["event: status", "event: status", "event: delta", "event: delta", "event: result"]
     joined = "\n".join(lines)
     assert '{"stage": "理解问题"}' in joined
     assert '{"stage": "生成SQL（第1次）"}' in joined
     assert '{"text": "SELECT 1"}' in joined
+    assert '{"text": " FR\\nOM parks"}' in joined  # 换行经 JSON 转义，单行 data 原样往返
     assert '"sql": "SELECT 1"' in joined and '"ok": true' in joined
+    assert '"sample_rows": [["292"]]' in joined
 
 
 def test_stream_llm_error_event():

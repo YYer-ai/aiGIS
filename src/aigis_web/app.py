@@ -19,6 +19,13 @@ def _db_error_message(e: psycopg.OperationalError) -> str:
     return f"数据库连接失败，请确认 aigis-postgis 容器在运行：{e}"
 
 
+def _to_response(out) -> QueryResponse:
+    return QueryResponse(sql=out.sql, reasoning=out.reasoning, attempts=out.attempts,
+                         ok=out.ok, row_count=len(out.rows), columns=out.columns,
+                         sample_rows=[[repr(v) for v in row] for row in out.rows[:10]],
+                         geojson=out.geojson, error=out.error)
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="AI-GIS 操作台")
     app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"],
@@ -35,9 +42,7 @@ def create_app() -> FastAPI:
         except psycopg.OperationalError as e:
             return JSONResponse(status_code=502,
                 content=QueryResponse(error=_db_error_message(e)).model_dump())
-        return QueryResponse(sql=out.sql, reasoning=out.reasoning, attempts=out.attempts,
-                             ok=out.ok, row_count=len(out.rows), columns=out.columns,
-                             geojson=out.geojson, error=out.error)
+        return _to_response(out)
 
     @app.get("/api/query/stream")
     def query_stream(q: str):
@@ -56,10 +61,7 @@ def create_app() -> FastAPI:
                     out = run_query_stream(question, load_config(),
                                            on_delta=lambda t: events.put(("delta", {"text": t})),
                                            on_status=lambda s: events.put(("status", {"stage": s})))
-                    resp = QueryResponse(sql=out.sql, reasoning=out.reasoning,
-                                         attempts=out.attempts, ok=out.ok,
-                                         row_count=len(out.rows), columns=out.columns,
-                                         geojson=out.geojson, error=out.error)
+                    resp = _to_response(out)
                     events.put(("result", resp.model_dump()))
                 except LLMError as e:
                     events.put(("error", {"error": str(e)}))

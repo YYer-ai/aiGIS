@@ -61,6 +61,172 @@ html, body, #root {
   font-style: italic;
 }
 
+/* 流式阶段提示 */
+.msg-stage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #c8e1ff;
+}
+
+.stage-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #3a4a63;
+  border-top-color: #8ab4f8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.msg-elapsed {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9aa0ac;
+}
+
+/* 流式 SQL 块：末尾光标 */
+.msg-code-streaming code::after {
+  content: "▍";
+  color: #8ab4f8;
+  animation: blink 1s step-start infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* 空状态与示例 chips */
+.chat-empty {
+  align-self: center;
+  margin-top: 28px;
+  text-align: center;
+  color: #9aa0ac;
+}
+
+.chat-empty-title {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.chat-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 10px 8px;
+}
+
+.example-chip {
+  text-align: left;
+  padding: 7px 12px;
+  background: #22252d;
+  color: #c8e1ff;
+  border: 1px solid #33363f;
+  border-radius: 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.example-chip:hover {
+  border-color: #2f6fdb;
+  background: #262a33;
+}
+
+/* 单值大数字卡片 */
+.big-number-card {
+  text-align: center;
+  padding: 12px 16px;
+  background: #16181d;
+  border: 1px solid #33363f;
+  border-radius: 8px;
+}
+
+.big-number-label {
+  font-size: 12px;
+  color: #9aa0ac;
+}
+
+.big-number-value {
+  font-size: 44px;
+  font-weight: 700;
+  color: #8ab4f8;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* 多行结果表格 */
+.msg-table-wrap {
+  margin: 2px 0 6px;
+}
+
+.msg-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  max-width: 100%;
+  display: block;
+  overflow-x: auto;
+}
+
+.msg-table th, .msg-table td {
+  border: 1px solid #33363f;
+  padding: 4px 8px;
+  text-align: left;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-table th {
+  background: #16181d;
+  color: #8ab4f8;
+  position: sticky;
+  top: 0;
+}
+
+.msg-table-more {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9aa0ac;
+}
+
+/* 地图要素 popup 属性表（popup 内容默认白底黑字） */
+.maplibregl-popup-content {
+  padding: 8px 10px;
+}
+
+.popup-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 2px 0;
+  max-width: 280px;
+}
+
+.popup-table th, .popup-table td {
+  border: 1px solid #e2e4e9;
+  padding: 3px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.popup-table th {
+  background: #f3f4f7;
+  color: #444;
+  white-space: nowrap;
+}
+
+.popup-table td {
+  color: #222;
+  max-width: 180px;
+  overflow-wrap: anywhere;
+}
+
 .msg-error {
   color: #ff6b6b;
 }

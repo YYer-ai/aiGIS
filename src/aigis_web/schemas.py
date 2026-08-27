@@ -10,5 +10,6 @@ class QueryResponse(BaseModel):
     ok: bool = False
     row_count: int = 0
     columns: list[str] = []
+    sample_rows: list[list[str]] = []  # 前 10 行（单元格 repr），前端表格展示
     geojson: dict | None = None
     error: str = ""
