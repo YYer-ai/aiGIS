@@ -8,6 +8,7 @@
 """
 import json
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import psycopg
@@ -33,7 +34,7 @@ _WRITE_NODES = (exp.Insert, exp.Update, exp.Delete, exp.Drop, exp.Alter,
                 exp.TruncateTable)
 
 
-def _valid_layer_name(name: str) -> bool:
+def valid_layer_name(name: str) -> bool:
     return (_LAYER_NAME_RE.match(name) is not None
             and name not in _RESERVED_LAYER_NAMES
             and not name.startswith(_RESERVED_LAYER_PREFIXES))
@@ -66,7 +67,7 @@ def _parse_ctas(sql: str) -> tuple[exp.Create | None, str]:
     schema = (table.db or "").lower()
     if schema != "user_layers":
         return None, f"目标 schema 必须是 user_layers（当前：{schema or '未指定'}）"
-    if not _valid_layer_name(table.name):
+    if not valid_layer_name(table.name):
         return None, (f"表名 {table.name} 非法：需小写字母开头、仅含小写字母/数字/"
                       "下划线、长度 1-48，且不得为 registry 或 pg_/sql_ 开头")
     if list(stmt.find_all(*_WRITE_NODES)):
@@ -87,7 +88,7 @@ def validate_make(sql: str) -> tuple[bool, str]:
     allowed = set(DEFAULT_TABLES)
     for t in inner.find_all(exp.Table):
         if (t.db or "").lower() == "user_layers" and t.catalog == "":
-            if not _valid_layer_name(t.name.lower()):
+            if not valid_layer_name(t.name.lower()):
                 return False, f"引用的 user_layers 表 {t.name} 名字非法"
             allowed.add(t.name.lower())
     ok, reason = validate(inner.sql(dialect="postgres"), allowed)
@@ -163,13 +164,37 @@ _MAKE_FEWSHOT: list[tuple[str, dict]] = [
 ]
 
 
-def _make_messages(question: str, schema_text: str) -> list[dict]:
+def _make_messages(question: str, schema_text: str, layers_text: str = "") -> list[dict]:
     fewshot = "\n".join(f"问：{q}\nJSON：{json.dumps(d, ensure_ascii=False)}"
                         for q, d in _MAKE_FEWSHOT)
     system = _MAKE_SYSTEM_TEMPLATE.format(fewshot=fewshot)
     user = (f"数据库 schema（含中文注释与样本值）：\n{schema_text}\n\n"
+            f"{layers_text}\n"
             f"制作指令：{question}")
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
+def _existing_layers_text(cfg: Config) -> str:
+    """registry 图层清单注入 prompt（叠加制作需要知道现存图层名）。
+
+    registry 只授 maker/admin，走管理账号查询；查询失败降级为"当前无已有图层"
+    （清单缺失不应阻断制作主流程）。registry 表归管理账号所有，只读账号无权限。
+    """
+    try:
+        with psycopg.connect(
+                host=cfg.db_host, port=cfg.db_port, dbname=cfg.db_name,
+                user=cfg.admin_user, password=cfg.admin_password,
+                connect_timeout=5, options="-c statement_timeout=5000") as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT layer_name, feature_count FROM "
+                            "user_layers.registry ORDER BY created_at DESC")
+                rows = cur.fetchall()
+    except psycopg.Error:
+        return "已有图层: 当前无已有图层\n"
+    if not rows:
+        return "已有图层: 当前无已有图层\n"
+    listing = ", ".join(f"{n}({c}要素)" for n, c in rows)
+    return f"已有图层（可作 SELECT 数据源引用 user_layers.<名>）: {listing}\n"
 
 
 @dataclass
@@ -204,53 +229,82 @@ def _sample_geojson(cur, table_name: str) -> dict | None:
         return None
 
 
-def run_make_task(question: str, cfg: Config, provider=None) -> MakeOutcome:
-    """制作主流程：prompt → LLM 生成 JSON → make 校验 → maker 执行 → registry 注册 → 采样。"""
+def _fetch(provider, system: str, user: str,
+           on_delta: Callable[[str], None] | None) -> str:
+    """无回调走 generate；有回调走 generate_stream 并逐 delta 推送（同 repair._fetch）。"""
+    if on_delta is None:
+        return provider.generate(system, user)
+    parts: list[str] = []
+    for d in provider.generate_stream(system, user):
+        parts.append(d)
+        on_delta(d)
+    return "".join(parts)
+
+
+def run_make_task(question: str, cfg: Config, provider=None, max_retries: int = 2,
+                  on_delta: Callable[[str], None] | None = None,
+                  on_status: Callable[[str], None] | None = None) -> MakeOutcome:
+    """制作主流程：prompt（注入已有图层清单）→ LLM 生成 JSON → make 校验 →
+    maker 执行 → registry 注册 → 采样；解析/校验/执行失败回喂重试（同 repair 模式）。"""
     out = MakeOutcome()
     provider = provider or make_provider(cfg)
-    msgs = _make_messages(question, _cached_schema(cfg))
-    try:
-        raw = provider.generate(msgs[0]["content"], msgs[1]["content"])
-        data = json.loads(raw.strip().removeprefix("```json").removesuffix("```").strip())
-        out.sql = data["sql"]
-        out.label = str(data.get("label", ""))
-    except (ValueError, KeyError) as e:  # JSONDecodeError 是 ValueError 子类
-        out.error = f"LLM 输出解析失败: {e}"
-        return out
-    ok, reason = validate_make(out.sql)
-    if not ok:
-        out.error = f"制作 SQL 校验未通过：{reason}"
-        return out
-    out.table_name = _ctas_target_name(out.sql)
-    try:
-        with _connect_maker(cfg) as conn:
-            with conn.cursor() as cur:
-                try:
-                    cur.execute(out.sql)
-                except psycopg.errors.DuplicateTable:
-                    out.error = f"图层 {out.table_name} 已存在，请换个表名重试"
+    schema_text = _cached_schema(cfg)
+    layers_text = _existing_layers_text(cfg)
+    feedback = ""
+    for attempt in range(1, max_retries + 1):
+        if on_status:
+            on_status(f"生成建图SQL（第{attempt}次）")
+        msgs = _make_messages(
+            question + (f"\n\n上次尝试失败，信息：{feedback}" if feedback else ""),
+            schema_text, layers_text)
+        try:
+            raw = _fetch(provider, msgs[0]["content"], msgs[1]["content"], on_delta)
+            data = json.loads(raw.strip().removeprefix("```json").removesuffix("```").strip())
+            out.sql = data["sql"]
+            out.label = str(data.get("label", ""))
+        except (ValueError, KeyError) as e:  # JSONDecodeError 是 ValueError 子类
+            feedback = f"输出不是合法 JSON 或缺少 sql 字段：{e}"
+            out.error = f"LLM 输出解析失败: {e}"
+            continue
+        ok, reason = validate_make(out.sql)
+        if not ok:
+            feedback = f"制作 SQL 校验未通过：{reason}"
+            out.error = feedback
+            continue
+        out.table_name = _ctas_target_name(out.sql)
+        try:
+            with _connect_maker(cfg) as conn:
+                with conn.cursor() as cur:
+                    try:
+                        cur.execute(out.sql)
+                    except psycopg.errors.DuplicateTable:
+                        feedback = f"图层 {out.table_name} 已存在，请换一个 table_name 重试"
+                        out.error = feedback
+                        continue  # 回喂重试：LLM 换名重生成
+                    except psycopg.Error as e:
+                        feedback = f"执行失败：{e}".strip()
+                        out.error = feedback
+                        continue
+                    # 执行失败不注册：以下三步都在建表成功之后
+                    cur.execute(pgsql.SQL("SELECT count(*) FROM {}").format(
+                        pgsql.Identifier("user_layers", out.table_name)))
+                    out.feature_count = cur.fetchone()[0]
+                    cur.execute(
+                        "INSERT INTO user_layers.registry "
+                        "(layer_name, label, sql, feature_count) VALUES (%s, %s, %s, %s)",
+                        (out.table_name, out.label, out.sql, out.feature_count))
+                    out.geojson = _sample_geojson(cur, out.table_name)
+                    out.ok = True
                     return out
-                except psycopg.Error as e:
-                    out.error = f"执行失败：{e}".strip()
-                    return out
-                # 执行失败不注册：以下三步都在建表成功之后
-                cur.execute(pgsql.SQL("SELECT count(*) FROM {}").format(
-                    pgsql.Identifier("user_layers", out.table_name)))
-                out.feature_count = cur.fetchone()[0]
-                cur.execute(
-                    "INSERT INTO user_layers.registry "
-                    "(layer_name, label, sql, feature_count) VALUES (%s, %s, %s, %s)",
-                    (out.table_name, out.label, out.sql, out.feature_count))
-                out.geojson = _sample_geojson(cur, out.table_name)
-                out.ok = True
-    except psycopg.Error as e:  # 注册/统计阶段的库级错误
-        out.error = f"注册失败：{e}".strip()
+        except psycopg.Error as e:  # 注册/统计阶段的库级错误
+            out.error = f"注册失败：{e}".strip()
+            return out
     return out
 
 
 def drop_maker_layer(table_name: str, cfg: Config) -> tuple[bool, str]:
     """删除图层（管理账号）：DROP TABLE IF EXISTS + registry DELETE；表名过制作同款校验。"""
-    if not _valid_layer_name(table_name):
+    if not valid_layer_name(table_name):
         return False, f"表名 {table_name} 非法：需小写字母开头、仅含小写字母/数字/下划线"
     try:
         with psycopg.connect(

@@ -6,7 +6,8 @@ import psycopg
 import pytest
 
 from aigis.config import Config
-from aigis.make import drop_maker_layer, run_make_task, validate_make
+from aigis.make import (_existing_layers_text, drop_maker_layer, run_make_task,
+                        validate_make)
 
 # ---------- validate_make 矩阵 ----------
 
@@ -181,3 +182,53 @@ def test_drop_rejects_bad_names_without_db(bad):
     """非法表名在连接数据库前即被拒（正则同制作校验）。"""
     ok, err = drop_maker_layer(bad, Config())
     assert not ok and "非法" in err
+
+
+# ---------- M3 补强：图层清单注入 + 失败回喂重试 ----------
+
+def test_make_prompt_injects_existing_layers(monkeypatch):
+    """prompt user 消息注入已有图层清单（叠加制作的引用依据）。"""
+    monkeypatch.setattr("aigis.make._cached_schema", lambda cfg: "SCHEMA")
+    monkeypatch.setattr("aigis.make._existing_layers_text",
+                        lambda cfg: "已有图层: parks_buf(20要素)\n")
+    provider = MagicMock()
+    provider.generate.return_value = "不是 JSON"
+    run_make_task("叠加图层", Config(), provider=provider)
+    user_msg = provider.generate.call_args[0][1]
+    assert "已有图层: parks_buf(20要素)" in user_msg
+
+
+def test_run_make_task_exhausts_retries(monkeypatch):
+    """始终非法：按 max_retries 停止重试，错误为最后一次回喂信息，不连库执行。"""
+    monkeypatch.setattr("aigis.make._cached_schema", lambda cfg: "SCHEMA")
+    monkeypatch.setattr("aigis.make._existing_layers_text", lambda cfg: "")
+    provider = MagicMock()
+    provider.generate.return_value = json.dumps(
+        {"table_name": LAYER, "sql": "DROP TABLE user_layers.registry", "label": "x"})
+    out = run_make_task("x", Config(), provider=provider, max_retries=2)
+    assert not out.ok and provider.generate.call_count == 2
+    assert "校验未通过" in out.error
+
+
+@pytest.mark.integration
+def test_run_make_task_retry_recovers(clean_layer):
+    """回喂重试生效：第 1 次校验失败 → 第 2 次合法 CTAS → 端到端成功。"""
+    provider = MagicMock()
+    provider.generate.side_effect = [
+        json.dumps({"table_name": LAYER, "sql": "DROP TABLE user_layers.registry",
+                    "label": "x"}),
+        CTAS]
+    out = run_make_task("x", Config(), provider=provider)
+    assert out.ok, out.error
+    assert provider.generate.call_count == 2
+    second_user = provider.generate.call_args_list[1][0][1]
+    assert "上次尝试失败" in second_user and "校验未通过" in second_user
+
+
+@pytest.mark.integration
+def test_existing_layers_text_lists_registry(clean_layer):
+    """真库 registry 注册后，清单文本含 图层名(N要素) 格式。"""
+    provider = MagicMock()
+    provider.generate.return_value = CTAS
+    assert run_make_task("x", Config(), provider=provider).ok
+    assert f"{LAYER}(20要素)" in _existing_layers_text(Config())
