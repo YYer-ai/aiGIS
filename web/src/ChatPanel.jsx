@@ -11,6 +11,10 @@ const EXAMPLES = [
 function ResultBody({ res }) {
   const single = res.ok && res.row_count === 1 && res.columns.length === 1;
   const table = res.ok && !single && res.sample_rows?.length > 0;
+  // 隐藏 geometry 列（GeoJSON 长文本，几何已由地图承载）；全列均为 geometry 时退回原列防全空
+  const geoIdx = res.columns.map((c, i) => (c === "geometry" ? i : -1)).filter((i) => i >= 0);
+  const hidden = geoIdx.length > 0 && geoIdx.length < res.columns.length ? new Set(geoIdx) : null;
+  const columns = hidden ? res.columns.filter((_, i) => !hidden.has(i)) : res.columns;
   return (
     <div className="msg-body">
       {single ? (
@@ -24,11 +28,11 @@ function ResultBody({ res }) {
         <div className="msg-table-wrap">
           <table className="msg-table">
             <thead>
-              <tr>{res.columns.map((c, i) => <th key={i}>{c}</th>)}</tr>
+              <tr>{columns.map((c, i) => <th key={i}>{c}</th>)}</tr>
             </thead>
             <tbody>
               {res.sample_rows.map((row, r) => (
-                <tr key={r}>{row.map((v, i) => <td key={i}>{v}</td>)}</tr>
+                <tr key={r}>{row.map((v, i) => hidden?.has(i) ? null : <td key={i}>{v}</td>)}</tr>
               ))}
             </tbody>
           </table>
