@@ -3,13 +3,13 @@ export async function postQuery(question) {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ question }),
   }).catch(() => {
-    throw new Error("服务不可用，请确认后端已启动");
+    throw new Error("服务不可用——请运行项目根目录的 start_web.ps1 重启后端（机器重启后需重新启动）");
   });
   let body;
   try {
     body = await r.json();
   } catch {
-    throw new Error("服务不可用，请确认后端已启动");
+    throw new Error("服务不可用——请运行项目根目录的 start_web.ps1 重启后端（机器重启后需重新启动）");
   }
   if (!r.ok) throw new Error(body.error ?? (typeof body.detail === "string" ? body.detail : "请求参数无效"));
   return body;
@@ -46,7 +46,7 @@ export async function streamQuery(question, handlers = {}) {
   try {
     r = await fetch(`/api/query/stream?q=${encodeURIComponent(question)}`);
   } catch {
-    handlers.onError?.(new Error("服务不可用，请确认后端已启动"));
+    handlers.onError?.(new Error("服务不可用——请运行项目根目录的 start_web.ps1 重启后端（机器重启后需重新启动）"));
     return;
   }
   if (!r.ok) {
