@@ -1,4 +1,5 @@
 # src/aigis/llm.py
+import json
 import time
 from typing import Iterator, Protocol
 from openai import OpenAI, APITimeoutError, APIConnectionError, APIStatusError
@@ -67,3 +68,24 @@ def make_provider(cfg: Config) -> LLMProvider:
         raise LLMError("缺少 LLM_API_KEY，请在 .env 配置")
     return OpenAICompatProvider(cfg.llm_base_url, cfg.llm_api_key,
                                 cfg.llm_model)
+
+
+_SUMMARY_SYSTEM = ("你是查询结果播报员。用一句自然的中文回答用户的问题，"
+                   "严格基于给定查询结果，不编造；数字用阿拉伯数字；"
+                   "空结果就说没有找到相关数据。")
+
+
+def summarize(question: str, columns: list[str], sample_rows: list,
+              row_count: int, cfg: Config) -> Iterator[str]:
+    """把查询结果总结成一句自然语言回答，流式逐 token yield。
+
+    回答生成属增强项：任何异常降级为模板文本后结束，不抛出、不影响主流程。
+    """
+    user = (f"用户问题：{question}\n"
+            f"列名：{', '.join(columns)}\n"
+            f"前5行样本：{json.dumps(sample_rows[:5], ensure_ascii=False, default=str)}\n"
+            f"总行数：{row_count}")
+    try:
+        yield from make_provider(cfg).generate_stream(_SUMMARY_SYSTEM, user)
+    except Exception:
+        yield f"查询完成，共 {row_count} 行结果。"
