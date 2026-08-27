@@ -166,16 +166,14 @@ export default function MapPanel({ layers = [], onToggle, onRemove }) {
           map.on("mouseenter", sub, () => { map.getCanvas().style.cursor = "pointer"; });
           map.on("mouseleave", sub, () => { map.getCanvas().style.cursor = ""; });
         }
+        // 新增图层飞行到其范围
+        const bbox = bboxOf(l.geojson);
+        if (bbox) map.fitBounds(bbox, { padding: 48, maxZoom: 15, duration: 600 });
       }
       // 可见性开关（对全部子图层生效）
       const vis = l.visible === false ? "none" : "visible";
       for (const sub of subLayerIds(srcId)) {
         if (map.getLayer(sub)) map.setLayoutProperty(sub, "visibility", vis);
-      }
-      // 新增图层飞行到其范围
-      if (isNew) {
-        const bbox = bboxOf(l.geojson);
-        if (bbox) map.fitBounds(bbox, { padding: 48, maxZoom: 15, duration: 600 });
       }
     }
   }, [layers, mapReady]);
