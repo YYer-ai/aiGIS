@@ -6,10 +6,11 @@ const AMAP_TILE_URL =
   "https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}";
 const OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
-// 标注字形（SDF pbf）：OpenFreeMap 公共字体服务（Noto Sans，覆盖拉丁/数字；
-// 公共服务暂无 CJK pbf，中文字符无字形——自托管 CJK 字体后可解，见 M5 报告）
+// 标注字形（SDF pbf）：OpenFreeMap 公共字体服务（Noto Sans，覆盖拉丁/数字）。
+// 公共服务暂无 CJK pbf——中文列标注走 maplibregl.Marker DOM 方案（见 syncLabelMarkers）
 const GLYPHS_URL = "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf";
 const LABEL_FONT = ["Noto Sans Regular"];
+const LABEL_MARKER_LIMIT = 80; // 中文标注 Marker 上限（DOM 元素较多，采样标注即可）
 
 // 分类设色色板（前 10 个唯一值各配一色，超出回落基础色）；数值渐变两端色（蓝→红）
 const CATEGORICAL_10 = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
@@ -47,6 +48,27 @@ export function bboxOf(geojson) {
     if (f?.geometry?.coordinates) walk(f.geometry.coordinates);
   }
   return minX === Infinity ? null : [[minX, minY], [maxX, maxY]];
+}
+
+/** 列值是否全 ASCII（采样前 sample 个非空值）：true 走 symbol 子层（性能优），
+ * false（含中文等）走 DOM Marker 标注——公共 pbf 字形服务无 CJK，symbol 渲染不出 */
+export function columnIsAscii(geojson, column, sample = 20) {
+  let n = 0;
+  for (const f of geojson?.features || []) {
+    const v = f?.properties?.[column];
+    if (v == null) continue;
+    if (!/^[\x00-\x7F]*$/.test(String(v))) return false;
+    if (++n >= sample) break;
+  }
+  return true;
+}
+
+/** 几何首个坐标对 [lng, lat]：Point 直取；线/面/Multi* 递归剥壳取第一对数字 */
+export function firstCoord(geometry) {
+  let c = geometry?.coordinates;
+  while (Array.isArray(c) && typeof c[0] !== "number") c = c[0];
+  return (Array.isArray(c) && typeof c[0] === "number" && typeof c[1] === "number")
+    ? [c[0], c[1]] : null;
 }
 
 /** 属性列清单：features 中至少出现过一次非空值的键（保持出现顺序），供设色/标注下拉 */
@@ -149,25 +171,28 @@ function paintFor(kind, style, expr) {
   }
 }
 
-/** 标注 symbol 子层随 style.label 同步：无则加、有则改 text-field、关则删
- * （text-field 属 layout——无结构变化走 setLayoutProperty，避免整层重建） */
-function syncLabelLayer(map, srcId, style) {
+/** 标注 symbol 子层随 style.label 同步：无列或列含非 ASCII（无 CJK 字形，走 Marker）则删；
+ * 全 ASCII 则加/改 text-field（text-field 属 layout——无结构变化走 setLayoutProperty，
+ * 避免整层重建） */
+function syncLabelLayer(map, srcId, style, geojson) {
   const id = `${srcId}-label`;
   const col = style?.label?.column;
-  if (col && !map.getLayer(id)) {
-    map.addLayer({
-      id, type: "symbol", source: srcId, minzoom: 9,
-      layout: {
-        "text-field": ["to-string", ["get", col]], "text-font": LABEL_FONT,
-        "text-size": 12, "text-offset": [0, 1.1], "text-anchor": "top",
-      },
-      paint: {
-        "text-color": "#1b1d23", "text-halo-color": "#fff", "text-halo-width": 1.3,
-      },
-    });
-  } else if (col && map.getLayer(id)) {
-    map.setLayoutProperty(id, "text-field", ["to-string", ["get", col]]);
-  } else if (!col && map.getLayer(id)) {
+  if (col && columnIsAscii(geojson, col)) {
+    if (!map.getLayer(id)) {
+      map.addLayer({
+        id, type: "symbol", source: srcId, minzoom: 9,
+        layout: {
+          "text-field": ["to-string", ["get", col]], "text-font": LABEL_FONT,
+          "text-size": 12, "text-offset": [0, 1.1], "text-anchor": "top",
+        },
+        paint: {
+          "text-color": "#1b1d23", "text-halo-color": "#fff", "text-halo-width": 1.3,
+        },
+      });
+    } else {
+      map.setLayoutProperty(id, "text-field", ["to-string", ["get", col]]);
+    }
+  } else if (map.getLayer(id)) {
     map.removeLayer(id);
   }
 }
@@ -308,6 +333,8 @@ export default function MapPanel({
   const [mapReady, setMapReady] = useState(false);
   const colorsRef = useRef({});        // 图层 id -> 颜色，跨渲染/开关保持稳定
   const layerStateRef = useRef({});    // srcId -> {data, sig}：检测数据/样式变化
+  const labelMarkersRef = useRef({});  // srcId -> Marker[]：中文列标注（DOM 方案）
+  const markerSigRef = useRef({});     // srcId -> {column, visible, data}：变化才重建
 
   const [expandedId, setExpandedId] = useState(null); // 样式编辑抽屉展开的图层
   const [libOpen, setLibOpen] = useState(false);      // 图层库抽屉
@@ -318,6 +345,40 @@ export default function MapPanel({
   const colorOf = (l) =>
     l.color ??
     (colorsRef.current[l.id] ??= `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)`);
+
+  // —— 中文标注 Marker（列含非 ASCII 时替代 symbol 子层） ——
+
+  const clearLabelMarkers = (srcId) => {
+    for (const m of labelMarkersRef.current[srcId] || []) m.remove();
+    delete labelMarkersRef.current[srcId];
+    delete markerSigRef.current[srcId];
+  };
+
+  /** 标注列含非 ASCII → 前 80 个要素建 div Marker（class map-label，白字描边 CSS）；
+   * 坐标 Point 直取、线/面取首坐标对。sig（列|可见|数据引用）不变则跳过重建 */
+  const syncLabelMarkers = (map, srcId, l) => {
+    const col = l.style?.label?.column;
+    const want = (col && !columnIsAscii(l.geojson, col))
+      ? { column: col, visible: l.visible !== false, data: l.geojson } : null;
+    const prev = markerSigRef.current[srcId];
+    if (prev?.column === want?.column && prev?.visible === want?.visible
+        && prev?.data === want?.data) return;
+    clearLabelMarkers(srcId); // 标注关闭/切列/数据变/隐藏：先清再按需重建
+    markerSigRef.current[srcId] = want;
+    if (!want?.visible) return;
+    const markers = [];
+    for (const f of (l.geojson?.features || []).slice(0, LABEL_MARKER_LIMIT)) {
+      const pos = firstCoord(f?.geometry);
+      const v = f?.properties?.[col];
+      if (!pos || v == null || v === "") continue;
+      const el = document.createElement("div");
+      el.className = "map-label";
+      el.textContent = String(v);
+      markers.push(new maplibregl.Marker({ element: el, anchor: "top" })
+        .setLngLat(pos).addTo(map));
+    }
+    labelMarkersRef.current[srcId] = markers;
+  };
 
   // Step 1: 初始化地图（useRef 防严格模式重复初始化；cleanup 移除实例）；
   // preserveDrawingBuffer 供 PNG 导出读取画布，glyphs 供标注 symbol 层渲染文字
@@ -346,7 +407,7 @@ export default function MapPanel({
 
   // Step 2: 图层同步——新增加 source/子图层+fitBounds；数据替换 setData（如 make 层
   // 采样→全量补全）；样式变化 setPaintProperty（classify/gradient/颜色/透明度/半径/线宽）
-  // + 标注层增删；visible 切 setLayoutProperty；删除移除
+  // + 标注增删（ASCII 列走 symbol 子层，含中文走 DOM Marker）；visible 切 setLayoutProperty；删除移除
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
@@ -361,16 +422,17 @@ export default function MapPanel({
         for (const [k, v] of Object.entries(paintFor(kind, l.style, expr)))
           map.setPaintProperty(id, k, v);
       }
-      syncLabelLayer(map, srcId, l.style);
+      syncLabelLayer(map, srcId, l.style, l.geojson);
     };
 
-    // 移除已不存在的图层（先删子图层再删 source）
+    // 移除已不存在的图层（先删子图层再删 source；中文标注 Marker 一并清理）
     for (const srcId of Object.keys(map.getStyle().sources)) {
       if (!srcId.startsWith("lyr-") || wanted.has(srcId)) continue;
       for (const sub of subLayerIds(srcId)) {
         if (map.getLayer(sub)) map.removeLayer(sub);
       }
       map.removeSource(srcId);
+      clearLabelMarkers(srcId);
       delete colorsRef.current[srcId.slice(4)];
       delete layerStateRef.current[srcId];
     }
@@ -414,7 +476,7 @@ export default function MapPanel({
           map.on("mouseenter", sub, () => { map.getCanvas().style.cursor = "pointer"; });
           map.on("mouseleave", sub, () => { map.getCanvas().style.cursor = ""; });
         }
-        syncLabelLayer(map, srcId, l.style);
+        syncLabelLayer(map, srcId, l.style, l.geojson);
         layerStateRef.current[srcId] = { data: l.geojson, sig };
         // 新增图层飞行到其范围
         const bbox = bboxOf(l.geojson);
@@ -428,11 +490,12 @@ export default function MapPanel({
         applyStyle(srcId, l, expr);
         layerStateRef.current[srcId] = { data: l.geojson, sig };
       }
-      // 可见性开关（对全部子图层生效，含标注）
+      // 可见性开关（对全部子图层生效，含标注）；中文标注 Marker 单独同步
       const vis = l.visible === false ? "none" : "visible";
       for (const sub of subLayerIds(srcId)) {
         if (map.getLayer(sub)) map.setLayoutProperty(sub, "visibility", vis);
       }
+      syncLabelMarkers(map, srcId, l);
     }
   }, [layers, mapReady]);
 

@@ -30,6 +30,9 @@ GOOD = [
     # 内层 UNION
     "CREATE TABLE user_layers.mixed AS SELECT name, geom FROM osm_pois "
     "UNION SELECT name, geom FROM osm_areas",
+    # 保存图层属性统计：属性存 properties jsonb 列，用 ->> 提取（few-shot 同款模式）
+    "CREATE TABLE user_layers.stat_by_name AS SELECT properties->>'name' AS name, "
+    "count(*) AS cnt FROM user_layers.saved_parks GROUP BY 1",
 ]
 
 BAD = [

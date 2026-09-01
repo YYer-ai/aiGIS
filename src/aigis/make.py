@@ -112,6 +112,7 @@ _MAKE_SYSTEM_TEMPLATE = """你是 GIS 地图制作专家，把中文制作指令
 3. sql 必须是单条 CREATE TABLE user_layers.<table_name> AS SELECT ...，禁止 DROP/ALTER/INSERT/UPDATE/DELETE。
 4. SELECT 数据源只能用 public 业务表（osm_pois/osm_roads/osm_areas/osm_boundaries/ring_areas）或已有 user_layers 图层表；新表必须保留名为 geom 的 geometry 列（不要转成文本）。
 5. 缓冲/距离/面积用米制：ST_Buffer(geom::geography, 米)::geometry、ST_Area(geom::geography)。
+6. 引用已保存的前端图层时，其属性存在 properties jsonb 列中，取属性须用 properties->>'键名'（提取为文本）。
 以下是参考样例（中文指令 → JSON）：
 {fewshot}"""
 
@@ -161,6 +162,13 @@ _MAKE_FEWSHOT: list[tuple[str, dict]] = [
              "SELECT name, ST_SimplifyPreserveTopology(geom, 0.001) AS geom "
              "FROM osm_boundaries WHERE admin_level=6",
       "label": "区县边界简化"}),
+    # 保存图层引用：属性在 properties jsonb 列，用 ->> 提取（叠加/统计场景）
+    ("统计已保存图层 parks_3ring_buf500 中各类名称的数量，生成新图层",
+     {"table_name": "stat_by_name",
+      "sql": "CREATE TABLE user_layers.stat_by_name AS "
+             "SELECT properties->>'name' AS name, count(*) AS cnt "
+             "FROM user_layers.parks_3ring_buf500 GROUP BY 1",
+      "label": "按名称统计"}),
 ]
 
 

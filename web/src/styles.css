@@ -367,6 +367,21 @@ html, body, #root {
   inset: 0;
 }
 
+/* 中文标注 Marker：公共 pbf 字形无 CJK，含中文列走 DOM 方案（MapPanel syncLabelMarkers） */
+.map-label {
+  font-size: 12px;
+  line-height: 1.2;
+  color: #fff;
+  white-space: nowrap;
+  text-shadow:
+    -1px -1px 0 #1b1d23,
+    1px -1px 0 #1b1d23,
+    -1px 1px 0 #1b1d23,
+    1px 1px 0 #1b1d23,
+    0 0 3px #1b1d23;
+  pointer-events: none;
+}
+
 /* 图层卡片：地图右上角浮层 */
 .layer-cards {
   position: absolute;
