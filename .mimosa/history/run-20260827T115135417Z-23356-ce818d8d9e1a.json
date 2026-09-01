@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "mimosa-finding-history/v1",
+  "runId": "20260827T115135417Z-23356-ce818d8d9e1a",
+  "runStatus": "inconclusive",
+  "errors": [
+    "scan:web/src/api.js: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:web/src/ChatPanel.jsx: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:web/src/MapPanel.jsx: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_llm.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_repair.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_web.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis_web/app.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis_web/schemas.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/llm.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/repair.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+  ],
+  "target": ".",
+  "revision": "52ee115ea9b978cd5def61fe86c5795de98cb82b",
+  "diffHash": "7012e8cf2b16a055ec75c29aa84d891706d71e6504a743bc8fcb9d0f57dc2bcd",
+  "rulesVersion": "unavailable",
+  "recordedAt": "2026-08-27T11:51:35.417Z",
+  "timing": {
+    "startedAt": "2026-08-27T11:51:32.218Z",
+    "completedAt": "2026-08-27T11:51:35.417Z",
+    "durationMs": 3199
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "modelCalls": 0,
+    "measurement": "known-zero"
+  },
+  "findings": {
+    "total": 0,
+    "bySeverity": {},
+    "byStatus": {}
+  },
+  "coverage": {
+    "status": "partial",
+    "reasonCounts": {
+      "scanner_failed": 10,
+      "project_check_failed": 10
+    }
+  },
+  "evidenceBoundary": "static_only",
+  "immutableReport": ".mimosa/reports/task-review-sess_d6ff6ff6-ddd0-4327-b58d-41bf88209dce-20260827T115135417Z-23356-ce818d8d9e1a.json"
+}

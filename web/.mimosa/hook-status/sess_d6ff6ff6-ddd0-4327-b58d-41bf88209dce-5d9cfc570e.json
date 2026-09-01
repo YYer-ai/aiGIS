@@ -1,14 +1,14 @@
 {
   "schemaVersion": "mimosa-hook-status/v1",
-  "recordedAt": "2026-08-27T15:30:28.411Z",
+  "recordedAt": "2026-08-27T15:20:28.891Z",
   "sessionId": "sess_d6ff6ff6-ddd0-4327-b58d-41bf88209dce",
   "event": "PostToolUse",
-  "toolName": "Write",
-  "file": "docs/superpowers/specs/2026-08-27-map-making-design.md",
+  "toolName": "Edit",
+  "file": "src/MapPanel.jsx",
   "outcome": "clear",
   "coverage": "complete",
   "findingCount": 0,
-  "durationMs": 10,
+  "durationMs": 31,
   "hostState": "hook_complete",
   "reportHint": ".mimosa/reports/"
 }

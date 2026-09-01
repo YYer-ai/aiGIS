@@ -1,0 +1,162 @@
+event: status
+data: {"stage": "理解问题"}
+
+event: status
+data: {"stage": "生成SQL（第1次）"}
+
+event: delta
+data: {"text": ""}
+
+event: delta
+data: {"text": "\n\n"}
+
+event: delta
+data: {"text": "{\""}
+
+event: delta
+data: {"text": "sql"}
+
+event: delta
+data: {"text": "\":\""}
+
+event: delta
+data: {"text": "SELECT"}
+
+event: delta
+data: {"text": " name"}
+
+event: delta
+data: {"text": ","}
+
+event: delta
+data: {"text": " ST"}
+
+event: delta
+data: {"text": "_As"}
+
+event: delta
+data: {"text": "Geo"}
+
+event: delta
+data: {"text": "JSON"}
+
+event: delta
+data: {"text": "("}
+
+event: delta
+data: {"text": "geom"}
+
+event: delta
+data: {"text": ")"}
+
+event: delta
+data: {"text": " AS"}
+
+event: delta
+data: {"text": " geometry"}
+
+event: delta
+data: {"text": " FROM"}
+
+event: delta
+data: {"text": " os"}
+
+event: delta
+data: {"text": "m"}
+
+event: delta
+data: {"text": "_p"}
+
+event: delta
+data: {"text": "ois"}
+
+event: delta
+data: {"text": " WHERE"}
+
+event: delta
+data: {"text": " name"}
+
+event: delta
+data: {"text": " LIKE"}
+
+event: delta
+data: {"text": " '%"}
+
+event: delta
+data: {"text": "中关村"}
+
+event: delta
+data: {"text": "%'"}
+
+event: delta
+data: {"text": "\",\""}
+
+event: delta
+data: {"text": "reason"}
+
+event: delta
+data: {"text": "ing"}
+
+event: delta
+data: {"text": "\":\""}
+
+event: delta
+data: {"text": "在"}
+
+event: delta
+data: {"text": "兴趣"}
+
+event: delta
+data: {"text": "点"}
+
+event: delta
+data: {"text": "表中"}
+
+event: delta
+data: {"text": "按"}
+
+event: delta
+data: {"text": "名称"}
+
+event: delta
+data: {"text": "模糊"}
+
+event: delta
+data: {"text": "匹配"}
+
+event: delta
+data: {"text": "中关村"}
+
+event: delta
+data: {"text": "，"}
+
+event: delta
+data: {"text": "并"}
+
+event: delta
+data: {"text": "输出"}
+
+event: delta
+data: {"text": " Geo"}
+
+event: delta
+data: {"text": "JSON"}
+
+event: delta
+data: {"text": " "}
+
+event: delta
+data: {"text": "几何"}
+
+event: delta
+data: {"text": "。"}
+
+event: delta
+data: {"text": "\"}"}
+
+event: status
+data: {"stage": "执行查询"}
+
+event: result
+data: {"sql": "SELECT name, ST_AsGeoJSON(geom) AS geometry FROM osm_pois WHERE name LIKE '%中关村%'", "reasoning": "在兴趣点表中按名称模糊匹配中关村，并输出 GeoJSON 几何。", "attempts": 1, "ok": true, "row_count": 46, "columns": ["name", "geometry"], "sample_rows": [["中关村二小昌平学校", "{\"type\":\"Point\",\"coordinates\":[116.448848613,40.113906025]}"], ["海淀区中关村第一小学（党校校区）", "{\"type\":\"Point\",\"coordinates\":[116.26979215,40.015093297]}"], ["中关村第三小学（红山校区）", "{\"type\":\"Point\",\"coordinates\":[116.258815297,40.015836578]}"], ["中关村第一小学（天秀校区）", "{\"type\":\"Point\",\"coordinates\":[116.27285677,40.018760993]}"], ["中关村第二小学(百旺校区)", "{\"type\":\"Point\",\"coordinates\":[116.262630194,40.046493297]}"], ["中关村第一小学西二旗分校", "{\"type\":\"Point\",\"coordinates\":[116.304768117,40.048853715]}"], ["中关村第二小学科学城北区分校", "{\"type\":\"Point\",\"coordinates\":[116.277880343,40.065803421]}"], ["中关村第二小学科学城北区幼儿园", "{\"type\":\"Point\",\"coordinates\":[116.277135194,40.066634695]}"], ["中关村学院二分院", "{\"type\":\"Point\",\"coordinates\":[116.158190351,40.063953937]}"], ["中关村第三小学附属小学", "{\"type\":\"Point\",\"coordinates\":[116.222010917,40.082815028]}"]], "geojson": {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.448848613, 40.113906025]}, "properties": {"name": "中关村二小昌平学校"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.26979215, 40.015093297]}, "properties": {"name": "海淀区中关村第一小学（党校校区）"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.258815297, 40.015836578]}, "properties": {"name": "中关村第三小学（红山校区）"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.27285677, 40.018760993]}, "properties": {"name": "中关村第一小学（天秀校区）"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.262630194, 40.046493297]}, "properties": {"name": "中关村第二小学(百旺校区)"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.304768117, 40.048853715]}, "properties": {"name": "中关村第一小学西二旗分校"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.277880343, 40.065803421]}, "properties": {"name": "中关村第二小学科学城北区分校"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.277135194, 40.066634695]}, "properties": {"name": "中关村第二小学科学城北区幼儿园"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.158190351, 40.063953937]}, "properties": {"name": "中关村学院二分院"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.222010917, 40.082815028]}, "properties": {"name": "中关村第三小学附属小学"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.239269265, 40.090639582]}, "properties": {"name": "中关村第三小学永新分校"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.198585629, 40.047930796]}, "properties": {"name": "中关村一小科学城分校"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.289576924, 39.967614031]}, "properties": {"name": "海淀区中关村第三小学（万柳北校区）"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.291502965, 39.961244981]}, "properties": {"name": "海淀区中关村第三小学（万柳南校区）"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.295409466, 39.98512834]}, "properties": {"name": "中关村第二小学（万泉河分校）"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.2961705, 39.9879986]}, "properties": {"name": "鹤一烤肉（中关村店）"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.290469223, 39.990205759]}, "properties": {"name": "中关村国际创新中心"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.3122907, 39.986]}, "properties": {"name": "中关村街道第一幼儿园"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.3108334, 39.98602524]}, "properties": {"name": "海淀区中关村第二小学"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.3105087, 39.9854359]}, "properties": {"name": "中关村岗楼东"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.3085952, 39.9805934]}, "properties": {"name": "靠墙吃海鲜大陷饺子 (中关村店)"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.3098729, 39.980805]}, "properties": {"name": "中国邮政中关村大街邮政支局"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.3095965, 39.9810644]}, "properties": {"name": "方中山胡辣汤中关村旗舰店"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.3115442, 39.981978]}, "properties": {"name": "中关村科贸中心"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.298829, 39.9830166]}, "properties": {"name": "中关村图书大厦"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.302138945, 39.975923988]}, "properties": {"name": "北京市信息管理学校（中关村校区）"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.3080341, 39.9742771]}, "properties": {"name": "皖南水乡（中关村店）"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.3060338, 39.9751017]}, "properties": {"name": "啤啤猫江湖烧烤小酒馆(中关村店)"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.314959515, 39.970692077]}, "properties": {"name": "中关村中学（双榆树校区）"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.316932338, 39.974237175]}, "properties": {"name": "北京中关村皇冠假日酒店"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.321900285, 39.972674995]}, "properties": {"name": "北京市中关村中学知春分校"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.3231202, 39.9756842]}, "properties": {"name": "北京中关村银行"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.328304803, 39.977258979]}, "properties": {"name": "海淀交通支队中关村大队"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.328872, 39.9813631]}, "properties": {"name": "中国科学院大学中关村校区"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.329636045, 39.982715567]}, "properties": {"name": "中国科学院大学（中关村校区）"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.3203072, 39.9834376]}, "properties": {"name": "太平洋影城（中关村店）"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.323881758, 39.980450008]}, "properties": {"name": "中国科学院大学中关村校区"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.320571457, 39.977365765]}, "properties": {"name": "北京市中关村中学"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.314451752, 39.978784599]}, "properties": {"name": "北京市中关村医院"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.315910186, 39.982389457]}, "properties": {"name": "海淀区中关村第一小学"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.327663874, 39.989407445]}, "properties": {"name": "海淀区中关村第二小学华清校区"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.321637314, 39.992820007]}, "properties": {"name": "中关村中学"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.339334343, 39.985915784]}, "properties": {"name": "中关村学院"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.345441309, 39.971342275]}, "properties": {"name": "中关村中学蓟门里"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.333503097, 39.96805984]}, "properties": {"name": "海淀区中关村第四小学"}}, {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.3256253, 39.9669086]}, "properties": {"name": "中关村街道红民村社区活动中心"}}]}, "error": ""}
+

@@ -1,0 +1,164 @@
+{
+  "schemaVersion": "mimosa-finding-ledger-batch/v1",
+  "batchId": "stop-20260827T115135417Z-23356-ce818d8d9e1a",
+  "runId": "20260827T115135417Z-23356-ce818d8d9e1a",
+  "runStatus": "inconclusive",
+  "coverage": {
+    "status": "partial",
+    "reasons": [
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "web/src/api.js",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "web/src/ChatPanel.jsx",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "web/src/MapPanel.jsx",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "tests/test_llm.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "tests/test_repair.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "tests/test_web.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis_web/app.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis_web/schemas.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis/llm.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis/repair.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "web/src/api.js",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "web/src/ChatPanel.jsx",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "web/src/MapPanel.jsx",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "tests/test_llm.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "tests/test_repair.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "tests/test_web.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis_web/app.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis_web/schemas.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis/llm.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis/repair.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      }
+    ]
+  },
+  "source": {
+    "component": "zcode-hook",
+    "operationId": "Stop"
+  },
+  "revision": "52ee115ea9b978cd5def61fe86c5795de98cb82b",
+  "diffHash": "7012e8cf2b16a055ec75c29aa84d891706d71e6504a743bc8fcb9d0f57dc2bcd",
+  "rulesVersion": "unavailable",
+  "sessionHash": "5d9cfc570efd36b8703aa8bf5eef0e1f3694286e985bbe2fd3893befde7bc283",
+  "reportRef": ".mimosa/reports/task-review-sess_d6ff6ff6-ddd0-4327-b58d-41bf88209dce-20260827T115135417Z-23356-ce818d8d9e1a.json",
+  "events": [],
+  "observedFindingIds": [],
+  "verifiedFiles": [],
+  "recordedAt": "2026-08-27T11:51:36.438Z"
+}

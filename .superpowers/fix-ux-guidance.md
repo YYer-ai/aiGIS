@@ -1,0 +1,1 @@
+- 2026-08-27 web/src/api.js 服务不可用兜底文案（postQuery 2 处 + streamQuery 1 处）改为提示运行项目根目录 start_web.ps1 重启后端，npm run build 通过，提交 ea65602。

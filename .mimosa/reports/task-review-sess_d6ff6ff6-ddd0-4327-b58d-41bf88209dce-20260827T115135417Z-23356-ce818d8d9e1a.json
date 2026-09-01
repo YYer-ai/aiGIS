@@ -1,0 +1,535 @@
+{
+  "schema_version": "mimosa-task-review/v2",
+  "run_id": "20260827T115135417Z-23356-ce818d8d9e1a",
+  "run_status": "inconclusive",
+  "errors": [
+    {
+      "stage": "scan",
+      "target": "web/src/api.js",
+      "reason": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+    },
+    {
+      "stage": "scan",
+      "target": "web/src/ChatPanel.jsx",
+      "reason": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+    },
+    {
+      "stage": "scan",
+      "target": "web/src/MapPanel.jsx",
+      "reason": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+    },
+    {
+      "stage": "scan",
+      "target": "tests/test_llm.py",
+      "reason": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+    },
+    {
+      "stage": "scan",
+      "target": "tests/test_repair.py",
+      "reason": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+    },
+    {
+      "stage": "scan",
+      "target": "tests/test_web.py",
+      "reason": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+    },
+    {
+      "stage": "scan",
+      "target": "src/aigis_web/app.py",
+      "reason": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+    },
+    {
+      "stage": "scan",
+      "target": "src/aigis_web/schemas.py",
+      "reason": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+    },
+    {
+      "stage": "scan",
+      "target": "src/aigis/llm.py",
+      "reason": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+    },
+    {
+      "stage": "scan",
+      "target": "src/aigis/repair.py",
+      "reason": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+    }
+  ],
+  "coverage": {
+    "schema_version": "mimosa-hook-coverage/v1",
+    "status": "partial",
+    "scope": "hook_observed_diff",
+    "baseline": {
+      "complete": true,
+      "captured_files": 37,
+      "candidate_limit": 5000,
+      "truncated": false,
+      "enumeration_error_count": 0,
+      "snapshot_error_count": 0,
+      "compensated_target_count": 10
+    },
+    "change_tracking": {
+      "touched_observed": 0,
+      "touched_retained": 0,
+      "truncated": false,
+      "bash_mutation": true,
+      "bash_discovered": 10,
+      "bash_discovery_limit": 80,
+      "bash_discovery_truncated": false
+    },
+    "candidates": {
+      "eligible_files": 10,
+      "selected_files": 10,
+      "limit": 20,
+      "truncated": false
+    },
+    "scanning": {
+      "required_files": 10,
+      "scanned_files": 0,
+      "skipped_files": 0,
+      "failed_files": 10,
+      "project_checks_required": 0,
+      "project_checks_completed": 0
+    },
+    "notification": {
+      "eligible_findings": 0,
+      "detailed_findings": 0,
+      "detail_limit": 3,
+      "truncated": false
+    },
+    "reason_counts": {
+      "scanner_failed": 10,
+      "project_check_failed": 10
+    },
+    "reasons": [
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "web/src/api.js",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "web/src/ChatPanel.jsx",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "web/src/MapPanel.jsx",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "tests/test_llm.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "tests/test_repair.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "tests/test_web.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis_web/app.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis_web/schemas.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis/llm.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis/repair.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "web/src/api.js",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "web/src/ChatPanel.jsx",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "web/src/MapPanel.jsx",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "tests/test_llm.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "tests/test_repair.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "tests/test_web.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis_web/app.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis_web/schemas.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis/llm.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis/repair.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affects_completion": true
+      }
+    ],
+    "reasons_truncated": false
+  },
+  "generated_at": "2026-08-27T11:51:35.417Z",
+  "session_id": "sess_d6ff6ff6-ddd0-4327-b58d-41bf88209dce",
+  "target": ".",
+  "revision": "52ee115ea9b978cd5def61fe86c5795de98cb82b",
+  "rules_version": "unavailable",
+  "diff_hash": "7012e8cf2b16a055ec75c29aa84d891706d71e6504a743bc8fcb9d0f57dc2bcd",
+  "diff": {
+    "algorithm": "sha256",
+    "changed_file_count": 10,
+    "changed_files": [
+      {
+        "file": "src/aigis_web/app.py",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 3
+          },
+          {
+            "start": 7,
+            "end": 7
+          },
+          {
+            "start": 10,
+            "end": 10
+          },
+          {
+            "start": 14,
+            "end": 28
+          },
+          {
+            "start": 44,
+            "end": 83
+          }
+        ],
+        "before_hash": "f53bdd89f38f189addb0bf083ee1a36eb168e99e1baf23423687a0246a8413cf",
+        "after_hash": "d237d7e202d7bd116d00bd854d8c1471189890c887884b5627a37ada48a60ef4"
+      },
+      {
+        "file": "src/aigis_web/schemas.py",
+        "ranges": [
+          {
+            "start": 13,
+            "end": 13
+          }
+        ],
+        "before_hash": "762d2a4bb26b925e597f405d2d5ed35713a228e7627799afc7ba6ae943197a5b",
+        "after_hash": "2f248d859a267f75b03f0b615f53731cf5db95b0a39831677a8fe76373f89bc0"
+      },
+      {
+        "file": "src/aigis/llm.py",
+        "ranges": [
+          {
+            "start": 3,
+            "end": 3
+          },
+          {
+            "start": 41,
+            "end": 63
+          }
+        ],
+        "before_hash": "14909b49f6b8c3ed5b63fd46fa1a5179c902c1c4a42a75a0f65fe45160b865e6",
+        "after_hash": "26ab207014eb44c63bdd83192cb2ed3da03416b46760955a129863cbad33a2a3"
+      },
+      {
+        "file": "src/aigis/repair.py",
+        "ranges": [
+          {
+            "start": 4,
+            "end": 4
+          },
+          {
+            "start": 35,
+            "end": 49
+          },
+          {
+            "start": 56,
+            "end": 57
+          },
+          {
+            "start": 61,
+            "end": 61
+          },
+          {
+            "start": 74,
+            "end": 75
+          },
+          {
+            "start": 86,
+            "end": 97
+          }
+        ],
+        "before_hash": "00cccff8ba7574592eb9720d1477700bd24faaef92efa00f4518a93ef06145da",
+        "after_hash": "1ece79e4b77b29f4e2891bf15db21f6a211dee5a00033a7f134f1ac43c26d336"
+      },
+      {
+        "file": "tests/test_llm.py",
+        "ranges": [
+          {
+            "start": 53,
+            "end": 87
+          }
+        ],
+        "before_hash": "c6248649c46724a785054759fb1d720b7dee8e7c2f0bf091eb73d5a36060a691",
+        "after_hash": "148f0645a391560ac957736a4125c9068642c6e6e86c87f30be4529ad3b996df"
+      },
+      {
+        "file": "tests/test_repair.py",
+        "ranges": [
+          {
+            "start": 5,
+            "end": 5
+          },
+          {
+            "start": 39,
+            "end": 70
+          }
+        ],
+        "before_hash": "e7d14166dafdbc1b1ed639e7b45416bcfa92177922d1927b5236d11237042bc1",
+        "after_hash": "88357e12f7b66b84648f78acaf29dd106be6af188bc1870c69f7a536d5703583"
+      },
+      {
+        "file": "tests/test_web.py",
+        "ranges": [
+          {
+            "start": 12,
+            "end": 12
+          },
+          {
+            "start": 17,
+            "end": 18
+          },
+          {
+            "start": 46,
+            "end": 95
+          }
+        ],
+        "before_hash": "98e060844ef2d2712e29b6e93c2d7267e9f123f7f43a78e4a38166b8551fd3c9",
+        "after_hash": "def911a2fdb74e6ece97f5618c8188ceb0c5befe0bbab10c6fe604a94ae14fa2"
+      },
+      {
+        "file": "web/src/api.js",
+        "ranges": [
+          {
+            "start": 17,
+            "end": 79
+          }
+        ],
+        "before_hash": "9074a508668061583316564846fd9844c7f07d98711de797b204c3543edf44de",
+        "after_hash": "2be861e1383265df1b1b00fe1c0b497c0a7c1eb304cab2377b069859f2ded5d6"
+      },
+      {
+        "file": "web/src/ChatPanel.jsx",
+        "ranges": [
+          {
+            "start": 2,
+            "end": 2
+          },
+          {
+            "start": 4,
+            "end": 17
+          },
+          {
+            "start": 20,
+            "end": 43
+          },
+          {
+            "start": 63,
+            "end": 79
+          },
+          {
+            "start": 84,
+            "end": 84
+          },
+          {
+            "start": 87,
+            "end": 87
+          },
+          {
+            "start": 91,
+            "end": 97
+          },
+          {
+            "start": 99,
+            "end": 100
+          },
+          {
+            "start": 103,
+            "end": 107
+          },
+          {
+            "start": 109,
+            "end": 134
+          },
+          {
+            "start": 136,
+            "end": 142
+          },
+          {
+            "start": 145,
+            "end": 154
+          },
+          {
+            "start": 159,
+            "end": 163
+          },
+          {
+            "start": 169,
+            "end": 177
+          },
+          {
+            "start": 182,
+            "end": 191
+          },
+          {
+            "start": 195,
+            "end": 195
+          }
+        ],
+        "before_hash": "5146a53232720feb5d163195216d4fd28e55cf223069fe4a8f9aec955c600c7a",
+        "after_hash": "afa914ccc47a741d471a125548d4e87505516086df9a90c52ec4654bf09bbcfb"
+      },
+      {
+        "file": "web/src/MapPanel.jsx",
+        "ranges": [
+          {
+            "start": 56,
+            "end": 74
+          },
+          {
+            "start": 161,
+            "end": 168
+          }
+        ],
+        "before_hash": "40fbf48085a8f5dc52ad31f0be21af47a74c9e4bf5319728af921dfb785ab4f6",
+        "after_hash": "6356cb30e8984ca27f31eb11a16cf100162ad390c31ac0267955641f635386e3"
+      }
+    ]
+  },
+  "timing": {
+    "started_at": "2026-08-27T11:51:32.218Z",
+    "completed_at": "2026-08-27T11:51:35.417Z",
+    "duration_ms": 3199,
+    "measurement": "hook_wall_clock"
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "model_calls": 0,
+    "measurement": "known-zero"
+  },
+  "telemetry": {
+    "schemaVersion": "mimosa-gate-telemetry/v1",
+    "profile": "gate",
+    "operation": "Stop",
+    "outcome": "partial/INCONCLUSIVE",
+    "latencyMs": 3199,
+    "peakMemoryBytes": 98852864,
+    "memoryMeasurement": "max-observed-process-rss",
+    "scannedFiles": 0,
+    "cache": {
+      "hits": 0,
+      "misses": 0,
+      "measurement": "not-applicable"
+    },
+    "denyCount": 0,
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "total": 0,
+      "modelCalls": 0,
+      "measurement": "known-zero"
+    }
+  },
+  "finding_count": 0,
+  "rewake_finding_count": 0,
+  "evidence_boundary": {
+    "scan": "candidate",
+    "static_fix_verification": "observed_static_only",
+    "runtime_verification": "not_performed"
+  },
+  "finding_events": [],
+  "findings": [],
+  "artifacts": {
+    "immutable_report": ".mimosa/reports/task-review-sess_d6ff6ff6-ddd0-4327-b58d-41bf88209dce-20260827T115135417Z-23356-ce818d8d9e1a.json",
+    "latest_report": ".mimosa/reports/task-review-sess_d6ff6ff6-ddd0-4327-b58d-41bf88209dce.json",
+    "history_summary": ".mimosa/history/run-20260827T115135417Z-23356-ce818d8d9e1a.json"
+  }
+}
