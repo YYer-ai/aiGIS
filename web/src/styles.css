@@ -488,3 +488,303 @@ html, body, #root {
   color: #6b7280;
   text-align: center;
 }
+
+/* ===== M5 制图工作台 ===== */
+
+/* 地图左上角工具条 */
+.map-toolbar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 5;
+  display: flex;
+  gap: 6px;
+}
+
+.tool-btn {
+  padding: 6px 12px;
+  background: rgba(34, 37, 45, 0.92);
+  border: 1px solid #33363f;
+  border-radius: 8px;
+  color: #e6e6e6;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.tool-btn:hover {
+  border-color: #2f6fdb;
+  background: #262a33;
+}
+
+/* 图层库抽屉（工具条下方浮层） */
+.layer-library {
+  position: absolute;
+  top: 48px;
+  left: 10px;
+  z-index: 6;
+  width: 300px;
+  max-height: 60%;
+  overflow-y: auto;
+  background: rgba(34, 37, 45, 0.96);
+  border: 1px solid #33363f;
+  border-radius: 8px;
+  font-size: 13px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+}
+
+.library-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-weight: 600;
+  border-bottom: 1px solid #33363f;
+  position: sticky;
+  top: 0;
+  background: #22252d;
+}
+
+.library-close {
+  border: none;
+  background: transparent;
+  color: #9aa0ac;
+  font-size: 16px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.library-close:hover {
+  color: #ff6b6b;
+}
+
+.library-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #2b2e36;
+}
+
+.library-row:last-child {
+  border-bottom: none;
+}
+
+.library-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.library-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #e6e6e6;
+}
+
+.library-meta {
+  font-size: 11px;
+  color: #9aa0ac;
+}
+
+.library-act {
+  flex: none;
+  padding: 3px 10px;
+  background: #262a33;
+  border: 1px solid #3a3f4b;
+  border-radius: 6px;
+  color: #c8e1ff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.library-act:hover {
+  border-color: #2f6fdb;
+}
+
+.library-del:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.library-act:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.library-hint,
+.library-error {
+  padding: 12px;
+  color: #9aa0ac;
+}
+
+.library-error {
+  color: #ff6b6b;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.library-error button {
+  align-self: flex-start;
+  padding: 3px 10px;
+  background: #262a33;
+  border: 1px solid #3a3f4b;
+  border-radius: 6px;
+  color: #c8e1ff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* 图层卡片容器（卡片行 + 行内展开的样式编辑抽屉） */
+.layer-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.layer-persist {
+  flex: none;
+  color: #7fd48a;
+  font-size: 12px;
+}
+
+.layer-expand {
+  flex: none;
+  color: #6f7683;
+  font-size: 10px;
+}
+
+/* 样式编辑抽屉（图层卡片行内展开区） */
+.layer-style-editor {
+  margin-top: 4px;
+  padding: 10px 12px;
+  background: rgba(34, 37, 45, 0.96);
+  border: 1px solid #33363f;
+  border-radius: 8px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.style-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.style-row > label {
+  flex: 0 0 56px;
+  color: #9aa0ac;
+}
+
+.style-row > input[type="range"] {
+  flex: 1;
+  accent-color: #2f6fdb;
+}
+
+.style-row > input[type="color"] {
+  width: 36px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #3a3f4b;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.style-hint {
+  color: #7fd48a;
+  font-size: 11px;
+}
+
+.style-select {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  background: #16181d;
+  border: 1px solid #33363f;
+  border-radius: 6px;
+  color: #e6e6e6;
+  font-size: 12px;
+}
+
+.style-select:focus {
+  outline: none;
+  border-color: #2f6fdb;
+}
+
+.style-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.style-reset,
+.style-save-btn,
+.style-cancel {
+  padding: 4px 10px;
+  background: #262a33;
+  border: 1px solid #3a3f4b;
+  border-radius: 6px;
+  color: #c8e1ff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.style-save-btn {
+  border-color: #2f6fdb;
+}
+
+.style-reset:hover,
+.style-cancel:hover {
+  border-color: #2f6fdb;
+}
+
+.style-save-btn:disabled,
+.style-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.style-persisted {
+  color: #7fd48a;
+  font-size: 12px;
+}
+
+.style-save-form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.style-save-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 8px;
+  background: #16181d;
+  border: 1px solid #33363f;
+  border-radius: 6px;
+  color: #e6e6e6;
+  font-size: 12px;
+}
+
+.style-save-form input:focus {
+  outline: none;
+  border-color: #2f6fdb;
+}
+
+.style-error {
+  color: #ff6b6b;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}

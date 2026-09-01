@@ -302,6 +302,52 @@ def run_make_task(question: str, cfg: Config, provider=None, max_retries: int = 
     return out
 
 
+def save_geojson_layer(table_name: str, label: str, geojson: dict,
+                       cfg: Config) -> tuple[bool, str, int]:
+    """前端临时图层 → 持久图层（spec §3 POST /api/layers/save 的库侧实现）。
+
+    管理账号执行（maker 只对自建表有 DML，admin 建的表它写不了）：
+    建 user_layers.<name>(geom geometry, properties jsonb) 表 → 批量参数化 INSERT
+    （ST_GeomFromGeoJSON，GeoJSON 规范恒为 WGS84 故 SetSRID 4326）→ 显式授只读
+    （admin 建表不适用 maker 的 default privileges）→ registry 注册；
+    建表成功后任一步失败即 DROP 清理，不留半成品。返回 (ok, error, feature_count)。
+    """
+    if not valid_layer_name(table_name):
+        return False, "表名非法：需小写字母开头、仅含小写字母/数字/下划线", 0
+    feats = [f for f in (geojson or {}).get("features", [])
+             if isinstance(f, dict) and f.get("geometry")]
+    if not feats:
+        return False, "geojson 中没有带几何的要素", 0
+    try:
+        with psycopg.connect(
+                host=cfg.db_host, port=cfg.db_port, dbname=cfg.db_name,
+                user=cfg.admin_user, password=cfg.admin_password,
+                autocommit=True) as conn:
+            with conn.cursor() as cur:
+                table = pgsql.Identifier("user_layers", table_name)
+                try:
+                    cur.execute(pgsql.SQL(
+                        "CREATE TABLE {} (geom geometry, properties jsonb)").format(table))
+                except psycopg.errors.DuplicateTable:
+                    return False, f"图层 {table_name} 已存在，请换一个名字保存", 0
+                rows = [(json.dumps(f["geometry"]),
+                         json.dumps(f.get("properties") or {}, ensure_ascii=False))
+                        for f in feats]
+                cur.executemany(pgsql.SQL(
+                    "INSERT INTO {} (geom, properties) VALUES "
+                    "(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s::jsonb)").format(table),
+                    rows)
+                cur.execute(pgsql.SQL("GRANT SELECT ON {} TO aigis_readonly").format(table))
+                cur.execute(
+                    "INSERT INTO user_layers.registry (layer_name, label, sql, feature_count) "
+                    "VALUES (%s, %s, %s, %s)",
+                    (table_name, label, "-- 保存自前端查询结果", len(feats)))
+    except psycopg.Error as e:
+        drop_maker_layer(table_name, cfg)  # 清理半成品表与可能残留的注册行
+        return False, str(e).strip(), 0
+    return True, "", len(feats)
+
+
 def drop_maker_layer(table_name: str, cfg: Config) -> tuple[bool, str]:
     """删除图层（管理账号）：DROP TABLE IF EXISTS + registry DELETE；表名过制作同款校验。"""
     if not valid_layer_name(table_name):

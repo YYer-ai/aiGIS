@@ -150,6 +150,7 @@ def test_stream_empty_q_422():
     ("把道路裁剪到四环范围内，做成新图层", True),        # 做成
     ("把这个结果保存为图层", True),                     # 保存为图层
     ("帮我新建图层存放区县质心", True),               # 新建图层（连续字面）
+    ("帮我新建一个测试图层存放区县质心", True),        # 新建.{0,6}图层（间隔表述，M5 放宽）
     ("把公园和河流叠加成图层", True),                   # 叠加.{0,4}图层
     ("把同名公园面合并成新图层", True),                 # 合并.{0,6}图层
     ("对河流做200米缓冲后保存为图层", True),            # 缓冲.{0,8}图层
@@ -281,6 +282,71 @@ def test_delete_layer_ok():
         r = c.delete("/api/layers/parks_buf")
     assert r.status_code == 200 and r.json() == {"deleted": "parks_buf"}
     drop.assert_called_once()
+
+
+# ---------- 保存临时图层（POST /api/layers/save，M5） ----------
+
+def _save_body(name="my_layer", label="我的图层"):
+    return {"name": name, "label": label, "geojson": {"type": "FeatureCollection", "features": [
+        {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.4, 39.9]},
+         "properties": {"name": "测试点"}}]}}
+
+
+def test_save_layer_bad_name_400():
+    c = TestClient(create_app())
+    r = c.post("/api/layers/save", json=_save_body(name="Bad Name"))
+    assert r.status_code == 400 and "非法" in r.json()["error"]
+
+
+def test_save_layer_no_geometry_400():
+    c = TestClient(create_app())
+    r = c.post("/api/layers/save",
+               json={"name": "my_layer", "label": "x",
+                     "geojson": {"features": [{"properties": {"a": 1}}]}})
+    assert r.status_code == 400 and "没有带几何" in r.json()["error"]
+
+
+def test_save_layer_duplicate_409():
+    with patch("aigis_web.app.save_geojson_layer",
+               return_value=(False, "图层 my_layer 已存在，请换一个名字保存", 0)):
+        c = TestClient(create_app())
+        r = c.post("/api/layers/save", json=_save_body())
+    assert r.status_code == 409 and "已存在" in r.json()["error"]
+
+
+@pytest.fixture()
+def clean_m5_layer():
+    """真库 save 闭环前后幂等清理。"""
+    from aigis.config import Config
+    from aigis.make import drop_maker_layer
+    drop_maker_layer("test_m5_layer", Config())
+    yield
+    drop_maker_layer("test_m5_layer", Config())
+
+
+@pytest.mark.integration
+def test_save_layer_roundtrip(clean_m5_layer):
+    """真库闭环：保存（中文属性）→ 列表可见 → geojson 取回（只读通道验证 GRANT，
+    属性 jsonb 上提还原）→ 重名 409 → DELETE → 404。"""
+    c = TestClient(create_app())
+    r = c.post("/api/layers/save", json=_save_body(name="test_m5_layer", label="M5保存"))
+    assert r.status_code == 200, r.json()
+    assert r.json() == {"layer_name": "test_m5_layer", "label": "M5保存", "feature_count": 1}
+    assert "test_m5_layer" in [i["layer_name"] for i in c.get("/api/layers").json()]
+
+    r = c.get("/api/layers/test_m5_layer/geojson")
+    assert r.status_code == 200
+    feats = r.json()["features"]
+    assert len(feats) == 1
+    assert feats[0]["properties"] == {"name": "测试点"}  # jsonb 上提，非嵌套
+    assert feats[0]["geometry"]["type"] == "Point"
+    assert feats[0]["geometry"]["coordinates"] == [116.4, 39.9]
+
+    r = c.post("/api/layers/save", json=_save_body(name="test_m5_layer"))
+    assert r.status_code == 409  # 重名拒绝
+
+    assert c.delete("/api/layers/test_m5_layer").status_code == 200
+    assert c.get("/api/layers/test_m5_layer/geojson").status_code == 404
 
 
 @pytest.fixture()

@@ -7,7 +7,7 @@ import pytest
 
 from aigis.config import Config
 from aigis.make import (_existing_layers_text, drop_maker_layer, run_make_task,
-                        validate_make)
+                        save_geojson_layer, validate_make)
 
 # ---------- validate_make 矩阵 ----------
 
@@ -232,3 +232,15 @@ def test_existing_layers_text_lists_registry(clean_layer):
     provider.generate.return_value = CTAS
     assert run_make_task("x", Config(), provider=provider).ok
     assert f"{LAYER}(20要素)" in _existing_layers_text(Config())
+
+
+# ---------- save_geojson_layer（M5：前端保存临时图层） ----------
+
+@pytest.mark.parametrize("name,geojson,expect", [
+    ("Bad!", {"features": []}, "非法"),                  # 表名非法：连库前即拒
+    ("ok_name", {"features": []}, "没有带几何"),         # 空 FeatureCollection
+    ("ok_name", {"features": [{"properties": {"a": 1}}]}, "没有带几何"),  # 无 geometry
+])
+def test_save_geojson_layer_validates_without_db(name, geojson, expect):
+    ok, err, count = save_geojson_layer(name, "x", geojson, Config())
+    assert not ok and count == 0 and expect in err

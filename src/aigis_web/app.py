@@ -10,14 +10,16 @@ from psycopg import sql as pgsql
 from aigis.config import Config, load_config
 from aigis.geojson_out import rows_to_geojson
 from aigis.llm import LLMError, summarize
-from aigis.make import drop_maker_layer, run_make_task, valid_layer_name
+from aigis.make import (drop_maker_layer, run_make_task, save_geojson_layer,
+                        valid_layer_name)
 from aigis.repair import run_query, run_query_stream
-from aigis_web.schemas import QueryRequest, QueryResponse
+from aigis_web.schemas import QueryRequest, QueryResponse, SaveLayerRequest
 import psycopg
 
 # 意图路由（spec §4）：命中制作关键词 → 转制作流；不引入 LLM 分类（YAGNI）
+# "新建.{0,6}图层"：放宽到"新建一个/新建一个XX图层"类间隔表述（M4 疑虑 1）
 _MAKE_INTENT_RE = re.compile(
-    r"做成|生成.{0,6}图层|保存为图层|新建图层|缓冲.{0,8}图层|叠加.{0,4}图层|合并.{0,6}图层")
+    r"做成|生成.{0,6}图层|保存为图层|新建.{0,6}图层|缓冲.{0,8}图层|叠加.{0,4}图层|合并.{0,6}图层")
 
 
 def _db_error_message(e: psycopg.OperationalError) -> str:
@@ -121,7 +123,38 @@ def create_app() -> FastAPI:
             return JSONResponse(status_code=500, content={"error": str(e).strip()})
         for f in gj["features"]:  # `*` 会带回原始 geom 列（WKB hex），从属性中剔除
             f["properties"].pop("geom", None)
+            # 前端保存的图层属性整存于 properties jsonb 列，取出后呈
+            # {"properties": {...}} 嵌套——仅当属性恰好只有这一个键且为 dict 时上提
+            # （CTAS 制作表列名几乎不可能恰为此形态，影响面可忽略）
+            if (set(f["properties"]) == {"properties"}
+                    and isinstance(f["properties"]["properties"], dict)):
+                f["properties"] = f["properties"]["properties"]
         return gj
+
+    @app.post("/api/layers/save")
+    def save_layer(req: SaveLayerRequest):
+        """临时查询结果 → 持久图层（spec §3）：建表+参数化批量 INSERT 走
+        make.save_geojson_layer（管理账号，仅动 user_layers schema）。"""
+        name = req.name.strip()
+        label = req.label.strip() or name
+        if not valid_layer_name(name):
+            return JSONResponse(status_code=400, content={
+                "error": "图层名非法：需小写字母开头、仅含小写字母/数字/下划线，长度 1-48"})
+        feats = req.geojson.get("features") if isinstance(req.geojson, dict) else None
+        if (not isinstance(feats, list)
+                or not any(isinstance(f, dict) and f.get("geometry") for f in feats)):
+            return JSONResponse(status_code=400,
+                                content={"error": "geojson 中没有带几何的要素"})
+        try:
+            cfg = load_config()
+            ok, err, count = save_geojson_layer(name, label, req.geojson, cfg)
+        except psycopg.OperationalError as e:
+            return JSONResponse(status_code=502, content={"error": _db_error_message(e)})
+        if not ok:  # 已存在→409；非法/空要素（预检遗漏形态）→400；库级错误→500
+            status = (409 if "已存在" in err
+                      else 400 if ("非法" in err or "没有" in err) else 500)
+            return JSONResponse(status_code=status, content={"error": err})
+        return {"layer_name": name, "label": label, "feature_count": count}
 
     @app.delete("/api/layers/{name}")
     def delete_layer(name: str):

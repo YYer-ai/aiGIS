@@ -3,6 +3,11 @@ from pydantic import BaseModel
 class QueryRequest(BaseModel):
     question: str
 
+class SaveLayerRequest(BaseModel):
+    name: str          # 表名（小写字母开头，仅小写字母/数字/下划线）
+    label: str = ""    # 中文图层名，缺省回落到 name
+    geojson: dict      # 前端临时图层的 FeatureCollection
+
 class QueryResponse(BaseModel):
     sql: str = ""
     reasoning: str = ""
