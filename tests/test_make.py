@@ -7,7 +7,13 @@ import pytest
 
 from aigis.config import Config
 from aigis.make import (_existing_layers_text, drop_maker_layer, run_make_task,
-                        save_geojson_layer, validate_make)
+                        save_geojson_layer, valid_layer_name, validate_make)
+
+
+def test_valid_layer_name_rejects_trailing_newline():
+    """正则用 \\Z 而非 $（$ 匹配串尾换行前），"x\\n" 必须拒绝。"""
+    assert valid_layer_name("x\n") is False
+    assert valid_layer_name("ok_name") is True
 
 # ---------- validate_make 矩阵 ----------
 

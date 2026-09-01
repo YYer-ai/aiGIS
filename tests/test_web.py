@@ -174,10 +174,10 @@ def _mock_make_outcome(ok=True, error="", table_name="x", label="测试图层",
 
 
 def test_stream_make_flow_event_sequence():
-    """制作关键词命中 → make 流：status(理解制作需求)→status(生成建图SQL)→delta
+    """制作关键词命中 → make 流：status(理解制作需求)→status(生成SQL)→delta
     →status(总结中)→answer_delta→result（QueryResponse 兼容结构）。"""
     def fake_make(question, cfg, on_delta=None, on_status=None, **kw):
-        on_status("生成建图SQL（第1次）")
+        on_status("生成SQL（第1次）")
         on_delta("CREATE TABLE user_layers.x AS SELECT 1")
         return _mock_make_outcome()
     with patch("aigis_web.app.run_make_task", side_effect=fake_make), \
@@ -191,7 +191,7 @@ def test_stream_make_flow_event_sequence():
                       "event: status", "event: answer_delta", "event: result"]
     joined = "\n".join(lines)
     assert '{"stage": "理解制作需求"}' in joined
-    assert '{"stage": "生成建图SQL（第1次）"}' in joined
+    assert '{"stage": "生成SQL（第1次）"}' in joined
     assert '"columns": ["layer_name", "label"]' in joined
     assert '"sample_rows": [["x", "测试图层"]]' in joined
     assert '"row_count": 20' in joined and '"ok": true' in joined

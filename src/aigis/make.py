@@ -25,7 +25,8 @@ from aigis.validator import validate
 
 # 图层表名：小写字母开头，仅小写字母/数字/下划线，≤48 字符；
 # 保留 registry 注册表本体与 pg_/sql_ 系统前缀
-_LAYER_NAME_RE = re.compile(r"^[a-z][a-z0-9_]{0,47}$")
+# （\Z 而非 $：$ 会匹配串尾换行前，"x\n" 会被放过）
+_LAYER_NAME_RE = re.compile(r"^[a-z][a-z0-9_]{0,47}\Z")
 _RESERVED_LAYER_NAMES = {"registry"}
 _RESERVED_LAYER_PREFIXES = ("pg_", "sql_")
 
@@ -261,7 +262,7 @@ def run_make_task(question: str, cfg: Config, provider=None, max_retries: int = 
     feedback = ""
     for attempt in range(1, max_retries + 1):
         if on_status:
-            on_status(f"生成建图SQL（第{attempt}次）")
+            on_status(f"生成SQL（第{attempt}次）")  # 与查询流同文案：前端按此前缀重置 SQL 块
         msgs = _make_messages(
             question + (f"\n\n上次尝试失败，信息：{feedback}" if feedback else ""),
             schema_text, layers_text)

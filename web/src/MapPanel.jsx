@@ -216,6 +216,10 @@ const onFeatureClick = (e) => {
     .addTo(e.target);
 };
 
+/** hover 手型（pt/ln/pg 子层共用；具名以便删除图层时成对 off，防监听器积累） */
+const onFeatureEnter = (e) => { e.target.getCanvas().style.cursor = "pointer"; };
+const onFeatureLeave = (e) => { e.target.getCanvas().style.cursor = ""; };
+
 // —— 属性列下拉（分类设色/渐变/标注共用；"关闭"值为空串） ——
 function ColumnSelect({ cols, value, onChange }) {
   return (
@@ -425,10 +429,13 @@ export default function MapPanel({
       syncLabelLayer(map, srcId, l.style, l.geojson);
     };
 
-    // 移除已不存在的图层（先删子图层再删 source；中文标注 Marker 一并清理）
+    // 移除已不存在的图层（先解绑监听器再删子图层和 source；中文标注 Marker 一并清理）
     for (const srcId of Object.keys(map.getStyle().sources)) {
       if (!srcId.startsWith("lyr-") || wanted.has(srcId)) continue;
       for (const sub of subLayerIds(srcId)) {
+        map.off("click", sub, onFeatureClick);
+        map.off("mouseenter", sub, onFeatureEnter);
+        map.off("mouseleave", sub, onFeatureLeave);
         if (map.getLayer(sub)) map.removeLayer(sub);
       }
       map.removeSource(srcId);
@@ -473,8 +480,8 @@ export default function MapPanel({
         for (const sub of [`${srcId}-pt`, `${srcId}-ln`, `${srcId}-pg`]) {
           if (!map.getLayer(sub)) continue;
           map.on("click", sub, onFeatureClick);
-          map.on("mouseenter", sub, () => { map.getCanvas().style.cursor = "pointer"; });
-          map.on("mouseleave", sub, () => { map.getCanvas().style.cursor = ""; });
+          map.on("mouseenter", sub, onFeatureEnter);
+          map.on("mouseleave", sub, onFeatureLeave);
         }
         syncLabelLayer(map, srcId, l.style, l.geojson);
         layerStateRef.current[srcId] = { data: l.geojson, sig };
