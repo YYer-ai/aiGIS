@@ -9,11 +9,13 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from psycopg import sql as pgsql
 from aigis.config import Config, load_config
 from aigis.geojson_out import rows_to_geojson
-from aigis.llm import LLMError, summarize
+from aigis.llm import LLMError, make_provider, summarize
 from aigis.make import (drop_maker_layer, run_make_task, save_geojson_layer,
                         valid_layer_name)
 from aigis.repair import run_query, run_query_stream
-from aigis_web.schemas import QueryRequest, QueryResponse, SaveLayerRequest
+from aigis_web import store
+from aigis_web.schemas import (QueryRequest, QueryResponse, SaveLayerRequest,
+                                SessionCreate, SessionRename)
 import psycopg
 
 # 意图路由（spec §4）：命中制作关键词 → 转制作流；不引入 LLM 分类（YAGNI）
@@ -42,6 +44,73 @@ def _summary_sample(rows) -> list[list[str]]:
     return [[str(v) for v in row] for row in rows[:5]]
 
 
+# ---------- 混合记忆（会话上下文：摘要前缀 + 最近 N 轮完整对话） ----------
+
+RECENT_N = 3  # 完整保留最近 N 轮（user+assistant 各一条，即 N*2 条消息）
+
+
+def _record(sid: str | None, role: str, content: str, meta: dict | None = None) -> None:
+    """记忆层写库失败不得影响主流程（worker 线程异常会污染 SSE 事件流）。"""
+    if not sid or not content:
+        return
+    try:
+        store.append_message(sid, role, content, meta)
+    except Exception:
+        pass
+
+
+def _history_line(m: dict) -> str:
+    """单条消息 → history 行；assistant 空 content 时回落 meta（图层/SQL）。"""
+    if m["role"] == "user":
+        return f"用户：{m['content'][:200]}"
+    meta = m.get("meta") or {}
+    if m["content"]:
+        text = m["content"][:200]
+    elif meta.get("table_name"):
+        text = f"已创建图层{meta['table_name']}"
+    elif meta.get("sql"):
+        text = meta["sql"][:200]
+    else:
+        text = "已回复"
+    return f"助手：{text}"
+
+
+def _merge_summary(sid: str, old_summary: str, msgs: list[dict], cfg: Config) -> str | None:
+    """窗口外未摘要消息并入既有摘要（LLM 增量合并）；失败静默，下次请求再试。"""
+    dialog = "".join(f"{_history_line(m)}\n" for m in msgs)
+    try:
+        merged = make_provider(cfg).generate(
+            "你是会话摘要助手，输出精炼的中文摘要。",
+            "把以下对话要点并入既有摘要，输出不超过150字的中文摘要："
+            f"既有摘要:{old_summary}\n新增对话:{dialog}").strip()
+        if not merged:
+            return None
+    except Exception:
+        return None
+    store.set_summary(sid, merged)
+    store.mark_summarized(sid, [m["id"] for m in msgs])
+    return merged
+
+
+def _build_history(sid: str, cfg: Config, allow_summary: bool) -> str | None:
+    """混合记忆组装：摘要前缀 + 最近 RECENT_N 轮完整对话（summarized=0 尾部窗口）。
+
+    allow_summary=True（SSE 主路径）时窗口外未摘要消息 ≥4 条触发增量摘要合并；
+    False（同步端点轻量）只取窗口不合并。会话无内容返回 None（不注入上下文）。
+    """
+    session = store.get_session(sid)
+    if session is None:
+        return None
+    pending = [m for m in store.get_messages(sid) if not m["summarized"]]
+    keep, outside = pending[-RECENT_N * 2:], pending[:-RECENT_N * 2]
+    summary = session["summary"]
+    if allow_summary and len(outside) >= 4:
+        summary = _merge_summary(sid, summary, outside, cfg) or summary
+    parts = ([f"历史摘要：{summary}"] if summary else []) + \
+            [_history_line(m) for m in keep]
+    return "\n".join(parts) if parts else None
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="AI-GIS 操作台")
     app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"],
@@ -49,22 +118,66 @@ def create_app() -> FastAPI:
 
     @app.post("/api/query")
     def query(req: QueryRequest):
-        if not req.question.strip():
+        question = req.question.strip()
+        if not question:
             return JSONResponse(status_code=422, content={"error": "问题不能为空"})
+        history = None
+        if req.session_id:
+            if store.get_session(req.session_id) is None:
+                return JSONResponse(status_code=404,
+                                    content={"error": f"会话 {req.session_id} 不存在"})
+            # 同步端点轻量：组装窗口但不做摘要触发
+            history = _build_history(req.session_id, load_config(), allow_summary=False)
+            _record(req.session_id, "user", question)
         try:
             cfg = load_config()
-            out = run_query(req.question.strip(), cfg)
+            out = run_query(question, cfg, history=history)
         except LLMError as e:
+            _record(req.session_id, "assistant", str(e))
             return JSONResponse(status_code=502, content=QueryResponse(error=str(e)).model_dump())
         except psycopg.OperationalError as e:
+            _record(req.session_id, "assistant", _db_error_message(e))
             return JSONResponse(status_code=502,
                 content=QueryResponse(error=_db_error_message(e)).model_dump())
         resp = _to_response(out)
         # chat 模式 answer 已由引擎填好，跳过 summarize；总结失败时 summarize 自行降级为模板文本
         if out.ok and not out.chat_mode:
-            resp.answer = "".join(summarize(req.question.strip(), out.columns,
+            resp.answer = "".join(summarize(question, out.columns,
                                             _summary_sample(out.rows), len(out.rows), cfg))
+        _record(req.session_id, "assistant", resp.answer or out.error,
+                {"sql": out.sql, "chat_mode": out.chat_mode, "row_count": len(out.rows)})
         return resp
+
+    # ---------- 会话（混合记忆载体）端点 ----------
+
+    @app.get("/api/sessions")
+    def sessions_list():
+        return store.list_sessions()
+
+    @app.post("/api/sessions", status_code=201)
+    def sessions_create(req: SessionCreate):
+        return store.create_session(req.title.strip())
+
+    @app.patch("/api/sessions/{sid}")
+    def sessions_rename(sid: str, req: SessionRename):
+        title = req.title.strip()
+        if not title:
+            return JSONResponse(status_code=400, content={"error": "标题不能为空"})
+        if not store.rename_session(sid, title):
+            return JSONResponse(status_code=404, content={"error": f"会话 {sid} 不存在"})
+        return store.get_session(sid)
+
+    @app.delete("/api/sessions/{sid}")
+    def sessions_delete(sid: str):
+        if not store.delete_session(sid):
+            return JSONResponse(status_code=404, content={"error": f"会话 {sid} 不存在"})
+        return {"deleted": sid}
+
+    @app.get("/api/sessions/{sid}/messages")
+    def session_messages(sid: str):
+        if store.get_session(sid) is None:
+            return JSONResponse(status_code=404, content={"error": f"会话 {sid} 不存在"})
+        return store.get_messages(sid)
 
     # ---------- 图层库（registry）端点 ----------
 
@@ -177,13 +290,24 @@ def create_app() -> FastAPI:
         return {"deleted": name}
 
     @app.get("/api/query/stream")
-    def query_stream(q: str):
+    def query_stream(q: str, session_id: str | None = None):
         question = q.strip()
         if not question:
             return JSONResponse(status_code=422, content={"error": "问题不能为空"})
+        history = None
+        if session_id:
+            if store.get_session(session_id) is None:
+                return JSONResponse(status_code=404,
+                                    content={"error": f"会话 {session_id} 不存在"})
+            # 混合记忆组装 + 摘要合并（同步低频：窗口外 ≥4 条未摘要才触发 LLM）
+            history = _build_history(session_id, load_config(), allow_summary=True)
+            _record(session_id, "user", question)
 
         def sse(event: str, data) -> str:
             return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+        def record(content: str, meta: dict | None = None) -> None:
+            _record(session_id, "assistant", content, meta)
 
         def gen():
             events: queue.Queue = queue.Queue()
@@ -191,7 +315,7 @@ def create_app() -> FastAPI:
             def query_worker():
                 try:
                     cfg = load_config()
-                    out = run_query_stream(question, cfg,
+                    out = run_query_stream(question, cfg, history=history,
                                            on_delta=lambda t: events.put(("delta", {"text": t})),
                                            on_status=lambda s: events.put(("status", {"stage": s})))
                     resp = _to_response(out)
@@ -205,12 +329,18 @@ def create_app() -> FastAPI:
                             parts.append(token)
                             events.put(("answer_delta", {"text": token}))
                         resp.answer = "".join(parts)
+                    record(resp.answer or out.error,
+                           {"sql": out.sql, "chat_mode": out.chat_mode,
+                            "row_count": len(out.rows)})
                     events.put(("result", resp.model_dump()))
                 except LLMError as e:
+                    record(str(e))
                     events.put(("error", {"error": str(e)}))
                 except psycopg.OperationalError as e:
+                    record(_db_error_message(e))
                     events.put(("error", {"error": _db_error_message(e)}))
                 except Exception as e:  # 后台线程异常不可见，必须有出口
+                    record(f"内部错误：{e}")
                     events.put(("error", {"error": f"内部错误：{e}"}))
                 finally:
                     events.put(None)  # 流结束哨兵
@@ -218,11 +348,12 @@ def create_app() -> FastAPI:
             def make_worker():
                 try:
                     cfg = load_config()
-                    out = run_make_task(question, cfg,
+                    out = run_make_task(question, cfg, history=history,
                                         on_delta=lambda t: events.put(("delta", {"text": t})),
                                         on_status=lambda s: events.put(("status", {"stage": s})))
                     if not out.ok:
                         # 误判兜底（spec §4）：提示可用查询表述重试
+                        record(out.error)
                         events.put(("error", {"error": (
                             f"{out.error}\n制作未成功；若想查询而非制作图层，"
                             "请改用查询表述（如「三环内有多少公园」）重新提问")}))
@@ -239,12 +370,17 @@ def create_app() -> FastAPI:
                         parts.append(token)
                         events.put(("answer_delta", {"text": token}))
                     resp.answer = "".join(parts)
+                    record(resp.answer, {"sql": out.sql, "table_name": out.table_name,
+                                         "row_count": out.feature_count})
                     events.put(("result", resp.model_dump()))
                 except LLMError as e:
+                    record(str(e))
                     events.put(("error", {"error": str(e)}))
                 except psycopg.OperationalError as e:
+                    record(_db_error_message(e))
                     events.put(("error", {"error": _db_error_message(e)}))
                 except Exception as e:
+                    record(f"内部错误：{e}")
                     events.put(("error", {"error": f"内部错误：{e}"}))
                 finally:
                     events.put(None)

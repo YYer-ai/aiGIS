@@ -2,6 +2,13 @@ from pydantic import BaseModel
 
 class QueryRequest(BaseModel):
     question: str
+    session_id: str | None = None  # 带会话则记录消息并注入对话上下文
+
+class SessionCreate(BaseModel):
+    title: str = ""  # 空标题由首条消息自动生成（store 逻辑）
+
+class SessionRename(BaseModel):
+    title: str
 
 class SaveLayerRequest(BaseModel):
     name: str          # 表名（小写字母开头，仅小写字母/数字/下划线）
