@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "mimosa-finding-ledger-batch/v1",
+  "batchId": "stop-20260902T112743893Z-22924-b143b48836a0",
+  "runId": "20260902T112743893Z-22924-b143b48836a0",
+  "runStatus": "completed",
+  "coverage": {
+    "status": "complete",
+    "reasons": []
+  },
+  "source": {
+    "component": "zcode-hook",
+    "operationId": "Stop"
+  },
+  "revision": "e9189f81e6656c343057eca967edd36e0bd36b43",
+  "diffHash": "b87c5a7fe8a7263495f52362367f838d8321f9c70af2273604499efd1669bbae",
+  "rulesVersion": "unavailable",
+  "sessionHash": "5d9cfc570efd36b8703aa8bf5eef0e1f3694286e985bbe2fd3893befde7bc283",
+  "reportRef": ".mimosa/reports/task-review-sess_d6ff6ff6-ddd0-4327-b58d-41bf88209dce-20260902T112743893Z-22924-b143b48836a0.json",
+  "events": [],
+  "observedFindingIds": [],
+  "verifiedFiles": [
+    {
+      "file": "web/src/api.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "web/src/App.jsx",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "web/src/ChatPanel.jsx",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "tests/test_repair.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "tests/test_web.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/aigis_web/app.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/aigis_web/schemas.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/aigis/prompt.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/aigis/repair.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    }
+  ],
+  "recordedAt": "2026-09-02T11:27:44.555Z"
+}

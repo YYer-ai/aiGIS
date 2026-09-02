@@ -1,0 +1,783 @@
+event: status
+data: {"stage": "理解问题"}
+
+event: status
+data: {"stage": "生成SQL（第1次）"}
+
+event: delta
+data: {"text": ""}
+
+event: delta
+data: {"text": "\n\n"}
+
+event: delta
+data: {"text": "{"}
+
+event: delta
+data: {"text": "\n"}
+
+event: delta
+data: {"text": " "}
+
+event: delta
+data: {"text": " \""}
+
+event: delta
+data: {"text": "sql"}
+
+event: delta
+data: {"text": "\":"}
+
+event: delta
+data: {"text": " \""}
+
+event: delta
+data: {"text": "SELECT"}
+
+event: delta
+data: {"text": " a"}
+
+event: delta
+data: {"text": ".name"}
+
+event: delta
+data: {"text": ","}
+
+event: delta
+data: {"text": " ST"}
+
+event: delta
+data: {"text": "_As"}
+
+event: delta
+data: {"text": "Geo"}
+
+event: delta
+data: {"text": "JSON"}
+
+event: delta
+data: {"text": "(a"}
+
+event: delta
+data: {"text": ".geom"}
+
+event: delta
+data: {"text": ")"}
+
+event: delta
+data: {"text": " AS"}
+
+event: delta
+data: {"text": " geometry"}
+
+event: delta
+data: {"text": " FROM"}
+
+event: delta
+data: {"text": " os"}
+
+event: delta
+data: {"text": "m"}
+
+event: delta
+data: {"text": "_areas"}
+
+event: delta
+data: {"text": " a"}
+
+event: delta
+data: {"text": " WHERE"}
+
+event: delta
+data: {"text": " a"}
+
+event: delta
+data: {"text": ".le"}
+
+event: delta
+data: {"text": "isure"}
+
+event: delta
+data: {"text": " ="}
+
+event: delta
+data: {"text": " '"}
+
+event: delta
+data: {"text": "park"}
+
+event: delta
+data: {"text": "'"}
+
+event: delta
+data: {"text": " AND"}
+
+event: delta
+data: {"text": " a"}
+
+event: delta
+data: {"text": ".name"}
+
+event: delta
+data: {"text": " IS"}
+
+event: delta
+data: {"text": " NOT"}
+
+event: delta
+data: {"text": " NULL"}
+
+event: delta
+data: {"text": " ORDER"}
+
+event: delta
+data: {"text": " BY"}
+
+event: delta
+data: {"text": " CO"}
+
+event: delta
+data: {"text": "ALES"}
+
+event: delta
+data: {"text": "CE"}
+
+event: delta
+data: {"text": "(("}
+
+event: delta
+data: {"text": "SELECT"}
+
+event: delta
+data: {"text": " MIN"}
+
+event: delta
+data: {"text": "(ST"}
+
+event: delta
+data: {"text": "_D"}
+
+event: delta
+data: {"text": "istance"}
+
+event: delta
+data: {"text": "(a"}
+
+event: delta
+data: {"text": ".geom"}
+
+event: delta
+data: {"text": "::"}
+
+event: delta
+data: {"text": "ge"}
+
+event: delta
+data: {"text": "ography"}
+
+event: delta
+data: {"text": ","}
+
+event: delta
+data: {"text": " r"}
+
+event: delta
+data: {"text": ".geom"}
+
+event: delta
+data: {"text": "::"}
+
+event: delta
+data: {"text": "ge"}
+
+event: delta
+data: {"text": "ography"}
+
+event: delta
+data: {"text": "))"}
+
+event: delta
+data: {"text": " FROM"}
+
+event: delta
+data: {"text": " os"}
+
+event: delta
+data: {"text": "m"}
+
+event: delta
+data: {"text": "_ro"}
+
+event: delta
+data: {"text": "ads"}
+
+event: delta
+data: {"text": " r"}
+
+event: delta
+data: {"text": " WHERE"}
+
+event: delta
+data: {"text": " r"}
+
+event: delta
+data: {"text": ".high"}
+
+event: delta
+data: {"text": "way"}
+
+event: delta
+data: {"text": " IN"}
+
+event: delta
+data: {"text": " ('"}
+
+event: delta
+data: {"text": "primary"}
+
+event: delta
+data: {"text": "',"}
+
+event: delta
+data: {"text": " '"}
+
+event: delta
+data: {"text": "secondary"}
+
+event: delta
+data: {"text": "')),"}
+
+event: delta
+data: {"text": " "}
+
+event: delta
+data: {"text": "1"}
+
+event: delta
+data: {"text": "0"}
+
+event: delta
+data: {"text": "0"}
+
+event: delta
+data: {"text": "0"}
+
+event: delta
+data: {"text": "0"}
+
+event: delta
+data: {"text": "0"}
+
+event: delta
+data: {"text": "0"}
+
+event: delta
+data: {"text": "0"}
+
+event: delta
+data: {"text": "0"}
+
+event: delta
+data: {"text": "0"}
+
+event: delta
+data: {"text": "0"}
+
+event: delta
+data: {"text": "0"}
+
+event: delta
+data: {"text": "0"}
+
+event: delta
+data: {"text": ")"}
+
+event: delta
+data: {"text": " ASC"}
+
+event: delta
+data: {"text": ","}
+
+event: delta
+data: {"text": " a"}
+
+event: delta
+data: {"text": ".name"}
+
+event: delta
+data: {"text": " ASC"}
+
+event: delta
+data: {"text": " LIMIT"}
+
+event: delta
+data: {"text": " "}
+
+event: delta
+data: {"text": "1"}
+
+event: delta
+data: {"text": "\","}
+
+event: delta
+data: {"text": "\n"}
+
+event: delta
+data: {"text": " "}
+
+event: delta
+data: {"text": " \""}
+
+event: delta
+data: {"text": "reason"}
+
+event: delta
+data: {"text": "ing"}
+
+event: delta
+data: {"text": "\":"}
+
+event: delta
+data: {"text": " \""}
+
+event: delta
+data: {"text": "无"}
+
+event: delta
+data: {"text": "实时"}
+
+event: delta
+data: {"text": "拥堵"}
+
+event: delta
+data: {"text": "数据"}
+
+event: delta
+data: {"text": "，"}
+
+event: delta
+data: {"text": "用"}
+
+event: delta
+data: {"text": "距"}
+
+event: delta
+data: {"text": "非"}
+
+event: delta
+data: {"text": "高速"}
+
+event: delta
+data: {"text": "/"}
+
+event: delta
+data: {"text": "快速"}
+
+event: delta
+data: {"text": "路"}
+
+event: delta
+data: {"text": "的主"}
+
+event: delta
+data: {"text": "干"}
+
+event: delta
+data: {"text": "/"}
+
+event: delta
+data: {"text": "次"}
+
+event: delta
+data: {"text": "干"}
+
+event: delta
+data: {"text": "道"}
+
+event: delta
+data: {"text": "最近"}
+
+event: delta
+data: {"text": "来"}
+
+event: delta
+data: {"text": "近似"}
+
+event: delta
+data: {"text": "交通"}
+
+event: delta
+data: {"text": "不"}
+
+event: delta
+data: {"text": "堵"}
+
+event: delta
+data: {"text": "且"}
+
+event: delta
+data: {"text": "方便"}
+
+event: delta
+data: {"text": "。"}
+
+event: delta
+data: {"text": "\""}
+
+event: delta
+data: {"text": "\n"}
+
+event: delta
+data: {"text": "}"}
+
+event: status
+data: {"stage": "执行查询"}
+
+event: status
+data: {"stage": "生成SQL（第2次）"}
+
+event: delta
+data: {"text": ""}
+
+event: delta
+data: {"text": "\n\n"}
+
+event: delta
+data: {"text": "{\""}
+
+event: delta
+data: {"text": "sql"}
+
+event: delta
+data: {"text": "\":"}
+
+event: delta
+data: {"text": " \""}
+
+event: delta
+data: {"text": "SELECT"}
+
+event: delta
+data: {"text": " a"}
+
+event: delta
+data: {"text": ".name"}
+
+event: delta
+data: {"text": ","}
+
+event: delta
+data: {"text": " ST"}
+
+event: delta
+data: {"text": "_As"}
+
+event: delta
+data: {"text": "Geo"}
+
+event: delta
+data: {"text": "JSON"}
+
+event: delta
+data: {"text": "(a"}
+
+event: delta
+data: {"text": ".geom"}
+
+event: delta
+data: {"text": ")"}
+
+event: delta
+data: {"text": " AS"}
+
+event: delta
+data: {"text": " geometry"}
+
+event: delta
+data: {"text": " FROM"}
+
+event: delta
+data: {"text": " os"}
+
+event: delta
+data: {"text": "m"}
+
+event: delta
+data: {"text": "_areas"}
+
+event: delta
+data: {"text": " a"}
+
+event: delta
+data: {"text": " JOIN"}
+
+event: delta
+data: {"text": " ring"}
+
+event: delta
+data: {"text": "_areas"}
+
+event: delta
+data: {"text": " r"}
+
+event: delta
+data: {"text": " ON"}
+
+event: delta
+data: {"text": " r"}
+
+event: delta
+data: {"text": ".r"}
+
+event: delta
+data: {"text": "ing"}
+
+event: delta
+data: {"text": "_name"}
+
+event: delta
+data: {"text": " ="}
+
+event: delta
+data: {"text": " '"}
+
+event: delta
+data: {"text": "三环"}
+
+event: delta
+data: {"text": "'"}
+
+event: delta
+data: {"text": " WHERE"}
+
+event: delta
+data: {"text": " ST"}
+
+event: delta
+data: {"text": "_"}
+
+event: delta
+data: {"text": "Contains"}
+
+event: delta
+data: {"text": "(r"}
+
+event: delta
+data: {"text": ".geom"}
+
+event: delta
+data: {"text": ","}
+
+event: delta
+data: {"text": " a"}
+
+event: delta
+data: {"text": ".geom"}
+
+event: delta
+data: {"text": ")"}
+
+event: delta
+data: {"text": " AND"}
+
+event: delta
+data: {"text": " a"}
+
+event: delta
+data: {"text": ".le"}
+
+event: delta
+data: {"text": "isure"}
+
+event: delta
+data: {"text": " ="}
+
+event: delta
+data: {"text": " '"}
+
+event: delta
+data: {"text": "park"}
+
+event: delta
+data: {"text": "'"}
+
+event: delta
+data: {"text": " AND"}
+
+event: delta
+data: {"text": " a"}
+
+event: delta
+data: {"text": ".name"}
+
+event: delta
+data: {"text": " IS"}
+
+event: delta
+data: {"text": " NOT"}
+
+event: delta
+data: {"text": " NULL"}
+
+event: delta
+data: {"text": " ORDER"}
+
+event: delta
+data: {"text": " BY"}
+
+event: delta
+data: {"text": " ST"}
+
+event: delta
+data: {"text": "_A"}
+
+event: delta
+data: {"text": "rea"}
+
+event: delta
+data: {"text": "(a"}
+
+event: delta
+data: {"text": ".geom"}
+
+event: delta
+data: {"text": "::"}
+
+event: delta
+data: {"text": "ge"}
+
+event: delta
+data: {"text": "ography"}
+
+event: delta
+data: {"text": ")"}
+
+event: delta
+data: {"text": " DESC"}
+
+event: delta
+data: {"text": " LIMIT"}
+
+event: delta
+data: {"text": " "}
+
+event: delta
+data: {"text": "1"}
+
+event: delta
+data: {"text": "\","}
+
+event: delta
+data: {"text": " \""}
+
+event: delta
+data: {"text": "reason"}
+
+event: delta
+data: {"text": "ing"}
+
+event: delta
+data: {"text": "\":"}
+
+event: delta
+data: {"text": " \""}
+
+event: delta
+data: {"text": "无"}
+
+event: delta
+data: {"text": "实时"}
+
+event: delta
+data: {"text": "拥堵"}
+
+event: delta
+data: {"text": "数据"}
+
+event: delta
+data: {"text": "，"}
+
+event: delta
+data: {"text": "以"}
+
+event: delta
+data: {"text": "三环"}
+
+event: delta
+data: {"text": "内"}
+
+event: delta
+data: {"text": "且"}
+
+event: delta
+data: {"text": "面积"}
+
+event: delta
+data: {"text": "较大的"}
+
+event: delta
+data: {"text": "公园"}
+
+event: delta
+data: {"text": "作为"}
+
+event: delta
+data: {"text": "交通便利"}
+
+event: delta
+data: {"text": "的"}
+
+event: delta
+data: {"text": "近似"}
+
+event: delta
+data: {"text": "。"}
+
+event: delta
+data: {"text": "\"}"}
+
+event: status
+data: {"stage": "执行查询"}
+
+event: status
+data: {"stage": "总结中"}
+
+event: answer_delta
+data: {"text": ""}
+
+event: answer_delta
+data: {"text": "\n\n"}
+
+event: answer_delta
+data: {"text": "交通"}
+
+event: answer_delta
+data: {"text": "不"}
+
+event: answer_delta
+data: {"text": "堵"}
+
+event: answer_delta
+data: {"text": "最"}
+
+event: answer_delta
+data: {"text": "方便"}
+
+event: answer_delta
+data: {"text": "的是"}
+
+event: answer_delta
+data: {"text": "天"}
+
+event: answer_delta
+data: {"text": "坛"}
+
+event: answer_delta
+data: {"text": "公园"}
+
+event: answer_delta
+data: {"text": "。"}
+
+event: result
+data: {"sql": "SELECT a.name, ST_AsGeoJSON(a.geom) AS geometry FROM osm_areas a JOIN ring_areas r ON r.ring_name = '三环' WHERE ST_Contains(r.geom, a.geom) AND a.leisure = 'park' AND a.name IS NOT NULL ORDER BY ST_Area(a.geom::geography) DESC LIMIT 1", "reasoning": "无实时拥堵数据，以三环内且面积较大的公园作为交通便利的近似。", "attempts": 2, "ok": true, "row_count": 1, "columns": ["name", "geometry"], "sample_rows": [["天坛公园", "{\"type\":\"Polygon\",\"coordinates\":[[[116.3941455,39.8826783],[116.3942113,39.8811817],[116.3942299,39.8807573],[116.3942677,39.8797741],[116.3943009,39.8797229],[116.3943049,39.8796488],[116.394309,39.8795745],[116.3943126,39.8795076],[116.3943327,39.8791901],[116.3993458,39.8792764],[116.3994283,39.8777704],[116.396592,39.8776775],[116.3966403,39.877023],[116.3994693,39.8771146],[116.399493,39.8767131],[116.3996611,39.8735649],[116.399668,39.8733306],[116.3996884,39.8729584],[116.3997804,39.872961],[116.4000516,39.8729688],[116.4069327,39.8732091],[116.4069904,39.8732114],[116.4070721,39.8732139],[116.4071536,39.8732164],[116.4072415,39.8732191],[116.4072918,39.873221],[116.4117077,39.8733627],[116.4118905,39.8733686],[116.4118726,39.87371],[116.4118612,39.8739288],[116.4116347,39.8770956],[116.4115623,39.8782922],[116.4115235,39.8790916],[116.4114736,39.8800392],[116.4114673,39.8802469],[116.4114561,39.8809367],[116.4114342,39.8812769],[116.4117298,39.8812775],[116.4128906,39.8813001],[116.4128966,39.8811156],[116.4135088,39.8811274],[116.4135033,39.8812593],[116.4134765,39.8820719],[116.4134748,39.8821217],[116.4142197,39.8821377],[116.4142112,39.8822059],[116.4141963,39.8823241],[116.4141663,39.8824642],[116.4141635,39.8824743],[116.4141261,39.8826069],[116.4141092,39.882667],[116.4140932,39.8827414],[116.4139765,39.8832573],[116.4139015,39.8835458],[116.4137897,39.8838838],[116.4136915,39.8841217],[116.4135701,39.884347],[116.4133926,39.8846357],[116.4132553,39.8848339],[116.4130556,39.8850993],[116.4128582,39.8853175],[116.4126495,39.8855324],[116.4123848,39.8857815],[116.4120415,39.8860111],[116.4116808,39.8862116],[116.4112022,39.8864048],[116.4106394,39.886573],[116.4102185,39.8866984],[116.409862,39.886755],[116.4095082,39.8867942],[116.4090701,39.8868254],[116.4086483,39.8868246],[116.406676,39.8867552],[116.4063786,39.8867441],[116.4062131,39.8867379],[116.4060828,39.886733],[116.4060558,39.8867319],[116.4022119,39.8866373],[116.4011759,39.8866046],[116.400297,39.886571],[116.3998477,39.886547],[116.3994288,39.8865053],[116.3987283,39.8864124],[116.3980129,39.8862803],[116.397199,39.8860848],[116.3968943,39.8859864],[116.396941,39.8853984],[116.3969174,39.8853408],[116.395469,39.8852431],[116.3951951,39.8849622],[116.394979,39.8847099],[116.3948079,39.8844729],[116.3946838,39.884255],[116.3945114,39.8839612],[116.3943801,39.8836522],[116.3942964,39.8833327],[116.3942634,39.8831877],[116.3942099,39.8829504],[116.3941519,39.8827055],[116.3941455,39.8826783]]]}"]], "geojson": {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[[116.3941455, 39.8826783], [116.3942113, 39.8811817], [116.3942299, 39.8807573], [116.3942677, 39.8797741], [116.3943009, 39.8797229], [116.3943049, 39.8796488], [116.394309, 39.8795745], [116.3943126, 39.8795076], [116.3943327, 39.8791901], [116.3993458, 39.8792764], [116.3994283, 39.8777704], [116.396592, 39.8776775], [116.3966403, 39.877023], [116.3994693, 39.8771146], [116.399493, 39.8767131], [116.3996611, 39.8735649], [116.399668, 39.8733306], [116.3996884, 39.8729584], [116.3997804, 39.872961], [116.4000516, 39.8729688], [116.4069327, 39.8732091], [116.4069904, 39.8732114], [116.4070721, 39.8732139], [116.4071536, 39.8732164], [116.4072415, 39.8732191], [116.4072918, 39.873221], [116.4117077, 39.8733627], [116.4118905, 39.8733686], [116.4118726, 39.87371], [116.4118612, 39.8739288], [116.4116347, 39.8770956], [116.4115623, 39.8782922], [116.4115235, 39.8790916], [116.4114736, 39.8800392], [116.4114673, 39.8802469], [116.4114561, 39.8809367], [116.4114342, 39.8812769], [116.4117298, 39.8812775], [116.4128906, 39.8813001], [116.4128966, 39.8811156], [116.4135088, 39.8811274], [116.4135033, 39.8812593], [116.4134765, 39.8820719], [116.4134748, 39.8821217], [116.4142197, 39.8821377], [116.4142112, 39.8822059], [116.4141963, 39.8823241], [116.4141663, 39.8824642], [116.4141635, 39.8824743], [116.4141261, 39.8826069], [116.4141092, 39.882667], [116.4140932, 39.8827414], [116.4139765, 39.8832573], [116.4139015, 39.8835458], [116.4137897, 39.8838838], [116.4136915, 39.8841217], [116.4135701, 39.884347], [116.4133926, 39.8846357], [116.4132553, 39.8848339], [116.4130556, 39.8850993], [116.4128582, 39.8853175], [116.4126495, 39.8855324], [116.4123848, 39.8857815], [116.4120415, 39.8860111], [116.4116808, 39.8862116], [116.4112022, 39.8864048], [116.4106394, 39.886573], [116.4102185, 39.8866984], [116.409862, 39.886755], [116.4095082, 39.8867942], [116.4090701, 39.8868254], [116.4086483, 39.8868246], [116.406676, 39.8867552], [116.4063786, 39.8867441], [116.4062131, 39.8867379], [116.4060828, 39.886733], [116.4060558, 39.8867319], [116.4022119, 39.8866373], [116.4011759, 39.8866046], [116.400297, 39.886571], [116.3998477, 39.886547], [116.3994288, 39.8865053], [116.3987283, 39.8864124], [116.3980129, 39.8862803], [116.397199, 39.8860848], [116.3968943, 39.8859864], [116.396941, 39.8853984], [116.3969174, 39.8853408], [116.395469, 39.8852431], [116.3951951, 39.8849622], [116.394979, 39.8847099], [116.3948079, 39.8844729], [116.3946838, 39.884255], [116.3945114, 39.8839612], [116.3943801, 39.8836522], [116.3942964, 39.8833327], [116.3942634, 39.8831877], [116.3942099, 39.8829504], [116.3941519, 39.8827055], [116.3941455, 39.8826783]]]}, "properties": {"name": "天坛公园"}}]}, "error": "数据库执行错误：canceling statement due to statement timeout", "answer": "\n\n交通不堵最方便的是天坛公园。"}
+
