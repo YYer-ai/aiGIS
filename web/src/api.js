@@ -78,13 +78,15 @@ function dispatchFrame(frame, h) {
 
 /**
  * SSE 流式提问：GET /api/query/stream?q=...
- * handlers: { onStatus(stage), onDelta(text), onAnswerDelta(text), onResult(res), onError(err) }
+ * handlers: { onStatus(stage), onDelta(text), onAnswerDelta(text), onResult(res), onError(err), onAbort() }
+ * signal: 可选 AbortSignal——abort 后调 onAbort（而非 onError 连接中断）
  */
-export async function streamQuery(question, handlers = {}) {
+export async function streamQuery(question, handlers = {}, signal) {
   let r;
   try {
-    r = await fetch(`/api/query/stream?q=${encodeURIComponent(question)}`);
+    r = await fetch(`/api/query/stream?q=${encodeURIComponent(question)}`, { signal });
   } catch {
+    if (signal?.aborted) { handlers.onAbort?.(); return; }
     handlers.onError?.(new Error("服务不可用——请运行项目根目录的 start_web.ps1 重启后端（机器重启后需重新启动）"));
     return;
   }
@@ -113,6 +115,7 @@ export async function streamQuery(question, handlers = {}) {
       }
     }
   } catch {
+    if (signal?.aborted) { handlers.onAbort?.(); return; }
     handlers.onError?.(new Error("连接中断，请重试"));
   }
 }

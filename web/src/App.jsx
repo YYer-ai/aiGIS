@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ChatPanel from "./ChatPanel.jsx";
 import MapPanel from "./MapPanel.jsx";
 import { deleteLayer, fetchLayerGeojson, fetchLayers, saveLayer } from "./api.js";
@@ -8,6 +8,13 @@ export default function App() {
   // layer: {id, name, geojson, visible, persistent, layerName?, style?}
   //   persistent: ♻ 持久图层（make 流产物 / 图层库加载 / 已保存），layerName 为 registry 表名
   //   style: {color, opacity, radius, width, classify:{column}, gradient:{column}, label:{column}}
+
+  // 地图按需出现：首个图层到达后 MapPanel 挂载（首次建 map）；此后图层删空也保留地图，
+  // 避免收回/再滑入闪烁——刷新页面才回到无地图全宽对话态
+  const [mapOpened, setMapOpened] = useState(false);
+  useEffect(() => {
+    if (layers.length > 0) setMapOpened(true);
+  }, [layers.length]);
 
   // 查询成功且含几何要素时叠加为新图层（计数类无 geometry 由 ChatPanel 摘要展示，不加图层）；
   // make 流结果（columns=["layer_name","label"] 约定）已是持久图层直接标 ♻，
@@ -69,20 +76,22 @@ export default function App() {
   };
 
   return (
-    <div className="console">
+    <div className={`console${mapOpened ? " has-map" : ""}`}>
       <ChatPanel onResult={handleResult} />
-      <MapPanel
-        layers={layers}
-        onToggle={(id) =>
-          setLayers((ls) => ls.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l)))
-        }
-        onRemove={(id) => setLayers((ls) => ls.filter((l) => l.id !== id))}
-        onStyle={handleStyle}
-        onPersist={handlePersist}
-        listLibrary={fetchLayers}
-        onLoadLibrary={handleLoadLibrary}
-        onDeleteLibrary={handleDeleteLibrary}
-      />
+      {mapOpened && (
+        <MapPanel
+          layers={layers}
+          onToggle={(id) =>
+            setLayers((ls) => ls.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l)))
+          }
+          onRemove={(id) => setLayers((ls) => ls.filter((l) => l.id !== id))}
+          onStyle={handleStyle}
+          onPersist={handlePersist}
+          listLibrary={fetchLayers}
+          onLoadLibrary={handleLoadLibrary}
+          onDeleteLibrary={handleDeleteLibrary}
+        />
+      )}
     </div>
   );
 }

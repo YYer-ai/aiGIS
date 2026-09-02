@@ -11,13 +11,18 @@ html, body, #root {
   font-family: system-ui, sans-serif;
 }
 
-/* 左 40%：对话面板 */
+/* 左列：对话面板——无地图时占满全宽；地图出现（.has-map）后收窄到 40% 平滑过渡 */
 .chat-panel {
-  flex: 0 0 40%;
+  flex: 0 0 100%;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #33363f;
   min-width: 0;
+  transition: flex-basis 0.4s ease;
+}
+
+.console.has-map .chat-panel {
+  flex: 0 0 40%;
 }
 
 .chat-header {
@@ -87,6 +92,27 @@ html, body, #root {
   margin-top: 4px;
   font-size: 12px;
   color: #9aa0ac;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* >90s 出现的"停止"按钮 */
+.stop-btn {
+  padding: 2px 12px;
+  background: transparent;
+  border: 1px solid #6b4a4a;
+  border-radius: 12px;
+  color: #ff8f8f;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.stop-btn:hover {
+  border-color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.12);
 }
 
 /* 自然语言回答（默认正文呈现） */
@@ -107,6 +133,41 @@ html, body, #root {
 
 @keyframes blink {
   50% { opacity: 0; }
+}
+
+/* chat 模式回答气泡（与 SQL 查询 answer 区分：💬 左侧标记 + 浅绿底） */
+.msg-chat {
+  background: rgba(127, 212, 138, 0.08);
+  border-left: 3px solid #7fd48a;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.msg-chat::before {
+  content: "💬 ";
+  opacity: 0.7;
+}
+
+/* chat 模式"曾尝试的 SQL"小字折叠 */
+.msg-detail-mini {
+  margin-top: 2px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: #6f7683;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.msg-detail-mini:hover {
+  color: #8b919d;
+  text-decoration: underline;
+}
+
+/* 用户主动停止后的终结消息 */
+.msg-cancelled {
+  color: #9aa0ac;
+  font-style: italic;
 }
 
 /* 流式 SQL 浅色小字（弱化进度，总结阶段收起入详情） */
@@ -355,11 +416,18 @@ html, body, #root {
   cursor: not-allowed;
 }
 
-/* 右 60%：地图面板 */
+/* 右 60%：地图面板——按需挂载（.has-map 时），flex-basis 0→60% 滑入 */
 .map-panel {
   position: relative;
-  flex: 1;
+  flex: 0 0 60%;
   min-width: 0;
+  overflow: hidden;
+  animation: map-slide-in 0.4s ease;
+}
+
+@keyframes map-slide-in {
+  from { flex-basis: 0%; opacity: 0; }
+  to { flex-basis: 60%; opacity: 1; }
 }
 
 .map-canvas {

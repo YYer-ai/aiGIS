@@ -7,9 +7,27 @@ const EXAMPLES = [
   "五环内面积最大的三个公园",
 ];
 
-// 终态结果呈现：默认 answer 文本 + 单值大数字卡片 + meta 一行；SQL/推理/多行表格收进"详情"折叠
+// 终态结果呈现：默认 answer 文本 + 单值大数字卡片 + meta 一行；SQL/推理/多行表格收进"详情"折叠。
+// chat 模式（chat_mode=true，AI 直接回答不硬编 SQL）：只显示 answer 气泡（.msg-chat 与查询态区分），
+// 曾尝试的 SQL（失败降级前的遗留）以小字折叠保留；无 SQL 则无任何折叠
 function ResultBody({ res, answer }) {
   const [showDetail, setShowDetail] = useState(false);
+  if (res.chat_mode) {
+    return (
+      <div className="msg-body">
+        {answer && <div className="msg-answer msg-chat">{answer}</div>}
+        {res.sql && (
+          <>
+            <button type="button" className="msg-detail-mini"
+              onClick={() => setShowDetail((v) => !v)}>
+              （曾尝试的 SQL 见详情 {showDetail ? "▴" : "▾"}）
+            </button>
+            {showDetail && <pre className="msg-code"><code>{res.sql}</code></pre>}
+          </>
+        )}
+      </div>
+    );
+  }
   const single = res.ok && res.row_count === 1 && res.columns.length === 1;
   const table = res.ok && !single && res.sample_rows?.length > 0;
   // 隐藏 geometry 列（GeoJSON 长文本，几何已由地图承载）；全列均为 geometry 时退回原列防全空
@@ -70,19 +88,35 @@ function ResultBody({ res, answer }) {
   );
 }
 
-// 流式中的助手消息：阶段 + 已耗时 + SQL 浅色小字（总结阶段收起 SQL、显示 answer 逐字）
-function StreamingMessage({ stage, sql, answer, elapsed }) {
+// 流式中的助手消息：阶段 + 已耗时 + SQL 浅色小字（总结阶段收起 SQL、显示 answer 逐字）。
+// chat 模式的 delta 是 LLM 原始 JSON 碎片（后端以 {"mode":...} 结构决策），过程区不展示改"思考中…"；
+// 耗时分级提示：>30s 慢生成说明，>90s 升级建议停止并给"停止"按钮
+function StreamingMessage({ stage, sql, answer, elapsed, onStop }) {
   const summarizing = stage === "总结中" || Boolean(answer);
+  const chatThinking = sql && sql.trimStart().startsWith("{") && sql.includes("mode");
   return (
     <div className="msg-body">
       <div className="msg-stage">
         {stage || "理解问题"}<span className="stage-spinner" />
       </div>
       <div className="msg-elapsed">
-        已用时 {elapsed} 秒 · 通常 10-25 秒
+        {elapsed > 90 ? (
+          <>
+            已用时 {elapsed} 秒 · 仍在生成——建议停止后重试
+            <button type="button" className="stop-btn" onClick={onStop}>停止</button>
+          </>
+        ) : elapsed > 30 ? (
+          <>已用时 {elapsed} 秒 · 生成较慢（模型推理中），可稍候或换个更具体的问法</>
+        ) : (
+          <>已用时 {elapsed} 秒 · 通常 10-25 秒</>
+        )}
       </div>
       {summarizing ? (
         answer ? <div className="msg-answer msg-answer-streaming">{answer}</div> : null
+      ) : chatThinking ? (
+        <div className="msg-sql-ghost">
+          <span className="msg-sql-ghost-label">思考中…</span>
+        </div>
       ) : sql ? (
         <div className="msg-sql-ghost">
           <span className="msg-sql-ghost-label">SQL 生成中…</span>
@@ -99,6 +133,7 @@ export default function ChatPanel({ onResult }) {
   const [loading, setLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const listRef = useRef(null);
+  const abortRef = useRef(null); // 当前流式请求的 AbortController（>90s"停止"按钮用）
 
   // 新消息/流式更新/计时 → 自动滚到底
   useEffect(() => {
@@ -126,6 +161,8 @@ export default function ChatPanel({ onResult }) {
     const start = Date.now();
     const timer = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000);
     let finalRes = null;
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     streamQuery(question, {
       onStatus: (stage) => {
@@ -151,9 +188,15 @@ export default function ChatPanel({ onResult }) {
         finalRes = { ok: false, error: err.message };
         patchLast({ streaming: false, res: finalRes });
       },
-    }).finally(() => {
+      onAbort: () => {
+        // 用户主动停止：终结为"已取消"（非报错样式）
+        finalRes = { ok: false, cancelled: true };
+        patchLast({ streaming: false, res: finalRes });
+      },
+    }, controller.signal).finally(() => {
       clearInterval(timer);
       setLoading(false);
+      abortRef.current = null;
       // 兜底：流结束但既无 result 也无 error（如代理截断），终结消息避免卡在流式态
       if (!finalRes) {
         finalRes = { ok: false, error: "连接中断，未收到结果，请重试" };
@@ -162,6 +205,9 @@ export default function ChatPanel({ onResult }) {
       if (finalRes.ok && onResult) onResult(finalRes, question);
     });
   }
+
+  // 停止当前流式请求（停止按钮仅 >90s 时出现）
+  const stop = () => abortRef.current?.abort();
 
   // Enter 发送；输入法 composing（中文回车选词）不触发
   const onKeyDown = (e) => {
@@ -188,9 +234,12 @@ export default function ChatPanel({ onResult }) {
           ) : (
             <div key={i} className="msg msg-assistant">
               {m.streaming ? (
-                <StreamingMessage stage={m.stage} sql={m.sql} answer={m.answer} elapsed={elapsed} />
+                <StreamingMessage stage={m.stage} sql={m.sql} answer={m.answer}
+                  elapsed={elapsed} onStop={stop} />
               ) : m.res ? (
-                m.res.ok ? (
+                m.res.cancelled ? (
+                  <div className="msg-cancelled">已取消</div>
+                ) : m.res.ok ? (
                   // answer 优先取 result 事件返回值，旧缓存缺字段时退回流式累积文本
                   <ResultBody res={m.res} answer={m.res.answer || m.answer} />
                 ) : (
