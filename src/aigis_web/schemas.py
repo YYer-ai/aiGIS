@@ -19,3 +19,4 @@ class QueryResponse(BaseModel):
     geojson: dict | None = None
     error: str = ""
     answer: str = ""  # 自然语言回答（LLM 总结失败时为模板文本，如"查询完成，共 N 行结果。"）
+    chat_mode: bool = False  # AI 判定无需 SQL：answer 即直接回复，无行数据

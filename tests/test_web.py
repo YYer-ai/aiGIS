@@ -9,6 +9,7 @@ def _mock_outcome(ok=True, rows=None, geojson=None, error=""):
     m = MagicMock()
     m.ok = ok; m.sql = "SELECT 1"; m.reasoning = "r"; m.attempts = 1
     m.rows = rows or []; m.columns = ["count"]; m.geojson = geojson; m.error = error
+    m.chat_mode = False; m.answer = ""  # 显式设默认，避免 MagicMock 属性 truthy
     return m
 
 def test_query_ok():
@@ -135,6 +136,50 @@ def test_stream_llm_error_event():
         lines = _stream_lines(c, "x")
     assert "event: error" in lines
     assert "LLM_API_KEY" in "\n".join(lines)
+
+
+# ---------- chat 模式（AI 判定无需 SQL，直接回复） ----------
+
+CHAT_REPLY = "当前数据不含实时交通信息，可查询三环内公园分布"
+
+
+def test_query_chat_mode_skips_summary():
+    """chat 模式：同步端点直接用 Outcome.answer，不再 summarize。"""
+    out = _mock_outcome()
+    out.chat_mode = True
+    out.answer = CHAT_REPLY
+    with patch("aigis_web.app.run_query", return_value=out), \
+         patch("aigis_web.app.summarize") as sm:
+        c = TestClient(create_app())
+        r = c.post("/api/query", json={"question": "交通不堵的公园是哪个"})
+    sm.assert_not_called()
+    assert r.status_code == 200
+    assert r.json()["chat_mode"] is True and r.json()["answer"] == CHAT_REPLY
+
+
+def test_stream_chat_mode_events():
+    """SSE chat：status(回答中) → delta(reply) → result(chat_mode/answer)；
+    跳过"总结中"与 answer_delta（answer 已有）。"""
+    def fake_run(question, cfg, on_delta=None, on_status=None, **kw):
+        on_status("回答中")
+        on_delta(CHAT_REPLY)
+        out = _mock_outcome(geojson=None)
+        out.chat_mode = True
+        out.answer = CHAT_REPLY
+        return out
+
+    with patch("aigis_web.app.run_query_stream", side_effect=fake_run), \
+         patch("aigis_web.app.summarize") as sm:
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "交通不堵的公园是哪个")
+    sm.assert_not_called()
+    events = [l for l in lines if l.startswith("event: ")]
+    assert events == ["event: status", "event: status", "event: delta", "event: result"]
+    joined = "\n".join(lines)
+    assert '{"stage": "回答中"}' in joined
+    assert f'{{"text": "{CHAT_REPLY}"}}' in joined
+    assert '"chat_mode": true' in joined
+    assert f'"answer": "{CHAT_REPLY}"' in joined
 
 
 def test_stream_empty_q_422():

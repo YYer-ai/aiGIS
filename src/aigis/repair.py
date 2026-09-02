@@ -24,12 +24,20 @@ class Outcome:
     columns: list[str] = field(default_factory=list)
     rows: list[tuple] = field(default_factory=list)
     geojson: dict | None = None
+    chat_mode: bool = False  # AI 判定无需 SQL，直接自然语言回复
+    answer: str = ""  # chat 模式下的回复文本，web 层直接使用
 
 
-def _parse_llm_json(text: str) -> tuple[str, str]:
-    """剥掉 markdown 代码围栏后解析 {"sql":..., "reasoning":...}。"""
-    data = json.loads(text.strip().removeprefix("```json").removesuffix("```").strip())
-    return data["sql"], data.get("reasoning", "")
+# 失败降级 prompt：SQL 尝试全部失败后，让 LLM 直接给用户一句解释性回复
+_CHAT_FALLBACK_SYSTEM = (
+    "用户向空间数据库提出了一个查询，但之前的 SQL 尝试均失败。"
+    "请直接给用户一句中文回复解释原因与建议。"
+    '只输出一个 JSON 对象：{"mode":"chat","reply":"一句自然的中文回答"}，不要多余文本。')
+
+
+def _parse_llm_json(text: str) -> dict:
+    """剥掉 markdown 代码围栏后解析 LLM 输出的 JSON 对象。"""
+    return json.loads(text.strip().removeprefix("```json").removesuffix("```").strip())
 
 
 def _fetch(provider, system: str, user: str,
@@ -60,9 +68,24 @@ def _run(question: str, cfg: Config, max_retries: int, provider,
             schema_text)
         raw = _fetch(provider, msgs[0]["content"], msgs[1]["content"], on_delta)
         try:
-            sql, reasoning = _parse_llm_json(raw)
-        except (ValueError, KeyError) as e:  # JSONDecodeError 是 ValueError 子类
+            data = _parse_llm_json(raw)
+        except ValueError as e:  # JSONDecodeError 是 ValueError 子类
             feedback = f"输出不是合法 JSON：{e}"
+            out.error = f"LLM 输出解析失败: {e}"
+            continue
+        if data.get("mode") == "chat":  # AI 判定无需 SQL：直接回复，不校验不执行
+            reply = str(data.get("reply", ""))
+            out.ok, out.chat_mode, out.answer = True, True, reply
+            out.reasoning, out.error = reply, ""
+            if on_status:
+                on_status("回答中")
+            if on_delta:  # 流式兼容：reply 一次整段推送
+                on_delta(reply)
+            return out
+        try:
+            sql, reasoning = data["sql"], data.get("reasoning", "")
+        except KeyError as e:
+            feedback = f"输出不是合法 JSON：缺少 {e} 字段"
             out.error = f"LLM 输出解析失败: {e}"
             continue
         out.sql, out.reasoning = sql, reasoning
@@ -80,6 +103,21 @@ def _run(question: str, cfg: Config, max_retries: int, provider,
             return out
         feedback = f"数据库执行错误：{result.error}"
         out.error = feedback
+    # 全部 SQL 尝试失败 → 降级 chat：追加一次 LLM 调用直接生成给用户的解释回复
+    fallback_user = f"问题：{question}\n\n之前的 SQL 尝试均失败：{out.error or '未知错误'}"
+    try:
+        data = _parse_llm_json(
+            _fetch(provider, _CHAT_FALLBACK_SYSTEM, fallback_user, on_delta))
+        if data.get("mode") == "chat":
+            out.ok, out.chat_mode = True, True
+            out.answer = str(data.get("reply", ""))
+            out.error = ""
+            if on_status:
+                on_status("回答中")
+            if on_delta:
+                on_delta(out.answer)
+    except ValueError:
+        pass  # 降级也失败：保留原失败 Outcome（ok=False）
     return out
 
 

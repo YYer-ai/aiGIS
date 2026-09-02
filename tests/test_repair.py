@@ -8,6 +8,8 @@ from aigis.repair import run_query, run_query_stream
 # 白名单内，会被 validator 拒绝，无法走通"修复后成功"路径
 BAD = '{"sql":"SELECT * FROM nope","reasoning":"x"}'
 GOOD = '{"sql":"SELECT count(*) AS n FROM osm_pois","reasoning":"ok"}'
+CHAT = '{"mode":"chat","reply":"当前数据不含实时交通信息，可查询三环内公园分布"}'
+CHAT_REPLY = "当前数据不含实时交通信息，可查询三环内公园分布"
 
 
 @pytest.mark.integration
@@ -22,10 +24,50 @@ def test_repair_loop_recovers():
 
 @pytest.mark.integration
 def test_gives_up_after_max():
+    # 降级调用同样返回无 mode 的 BAD → 降级失败 → 最终 ok=False
     provider = MagicMock()
     provider.generate.return_value = BAD
     out = run_query("x", Config(), max_retries=2, provider=provider)
     assert not out.ok and out.attempts == 2 and ("nope" in out.error or out.error)
+
+
+@pytest.mark.integration
+def test_fallback_chat_after_max_retries():
+    """失败降级：3 轮 BAD 后追加的降级调用返回 chat 回复 → ok=True chat_mode。"""
+    provider = MagicMock()
+    provider.generate.side_effect = [BAD, BAD, BAD, CHAT]
+    out = run_query("x", Config(), max_retries=3, provider=provider)
+    assert out.ok and out.chat_mode and out.attempts == 3
+    assert out.answer == CHAT_REPLY and out.error == ""
+    assert out.sql == "SELECT * FROM nope"  # 保留最后一次尝试的 SQL
+
+
+def test_chat_mode_returns_directly_without_executing(monkeypatch):
+    """chat 模式直返：首轮 mode=chat → 不校验不执行（execute 未被调用）。"""
+    monkeypatch.setattr("aigis.repair._cached_schema", lambda cfg: "SCHEMA")
+    execute = MagicMock()
+    monkeypatch.setattr("aigis.repair.execute_readonly", execute)
+    provider = MagicMock()
+    provider.generate.return_value = CHAT
+    out = run_query("交通不堵最方便的是哪个公园", Config(), provider=provider)
+    assert out.ok and out.chat_mode and out.attempts == 1
+    assert out.answer == CHAT_REPLY
+    assert out.sql == "" and out.error == ""
+    execute.assert_not_called()
+
+
+def test_chat_mode_stream_pushes_reply_as_delta(monkeypatch):
+    """流式 chat：status(回答中) + reply 一次整段作为 on_delta 推送。"""
+    monkeypatch.setattr("aigis.repair._cached_schema", lambda cfg: "SCHEMA")
+    provider = MagicMock()
+    provider.generate_stream.return_value = iter([CHAT])
+    deltas: list[str] = []
+    statuses: list[str] = []
+    out = run_query_stream("你好", Config(), on_delta=deltas.append,
+                           on_status=statuses.append, provider=provider)
+    assert out.ok and out.chat_mode and out.answer == CHAT_REPLY
+    assert statuses == ["生成SQL（第1次）", "回答中"]
+    assert deltas[-1] == CHAT_REPLY  # reply 整段（在原始 JSON delta 之后）
 
 
 @pytest.mark.integration

@@ -33,7 +33,8 @@ def _to_response(out) -> QueryResponse:
     return QueryResponse(sql=out.sql, reasoning=out.reasoning, attempts=out.attempts,
                          ok=out.ok, row_count=len(out.rows), columns=out.columns,
                          sample_rows=[[str(v) for v in row] for row in out.rows[:10]],
-                         geojson=out.geojson, error=out.error)
+                         geojson=out.geojson, error=out.error,
+                         chat_mode=out.chat_mode, answer=out.answer)
 
 
 def _summary_sample(rows) -> list[list[str]]:
@@ -59,7 +60,8 @@ def create_app() -> FastAPI:
             return JSONResponse(status_code=502,
                 content=QueryResponse(error=_db_error_message(e)).model_dump())
         resp = _to_response(out)
-        if out.ok:  # 回答生成失败时 summarize 自行降级为模板文本，不影响主流程
+        # chat 模式 answer 已由引擎填好，跳过 summarize；总结失败时 summarize 自行降级为模板文本
+        if out.ok and not out.chat_mode:
             resp.answer = "".join(summarize(req.question.strip(), out.columns,
                                             _summary_sample(out.rows), len(out.rows), cfg))
         return resp
@@ -193,7 +195,8 @@ def create_app() -> FastAPI:
                                            on_delta=lambda t: events.put(("delta", {"text": t})),
                                            on_status=lambda s: events.put(("status", {"stage": s})))
                     resp = _to_response(out)
-                    if out.ok:  # 总结在 worker 线程内 result 前同线程执行
+                    if out.ok and not out.chat_mode:
+                        # 总结在 worker 线程内 result 前同线程执行；chat 模式 answer 已有则跳过
                         events.put(("status", {"stage": "总结中"}))
                         parts: list[str] = []
                         for token in summarize(question, out.columns,
