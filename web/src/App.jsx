@@ -1,13 +1,58 @@
 import React, { useEffect, useState } from "react";
 import ChatPanel from "./ChatPanel.jsx";
 import MapPanel from "./MapPanel.jsx";
-import { deleteLayer, fetchLayerGeojson, fetchLayers, saveLayer } from "./api.js";
+import SessionSidebar from "./SessionSidebar.jsx";
+import {
+  createSession, deleteLayer, deleteSession, fetchLayerGeojson, fetchLayers,
+  fetchSessions, saveLayer,
+} from "./api.js";
+
+const LAST_SESSION_KEY = "aigis:lastSessionId";
 
 export default function App() {
   const [layers, setLayers] = useState([]);
   // layer: {id, name, geojson, visible, persistent, layerName?, style?}
   //   persistent: ♻ 持久图层（make 流产物 / 图层库加载 / 已保存），layerName 为 registry 表名
   //   style: {color, opacity, radius, width, classify:{column}, gradient:{column}, label:{column}}
+
+  // 多会话：currentSessionId 为 null 表示未建会话（首次发消息时 ChatPanel 经
+  // onEnsureSession 自动创建并续用）；刷新页面后按 localStorage 记录恢复最近会话
+  const [sessions, setSessions] = useState([]);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+
+  useEffect(() => {
+    fetchSessions()
+      .then((list) => {
+        setSessions(list);
+        const last = localStorage.getItem(LAST_SESSION_KEY);
+        if (last && list.some((s) => s.id === last)) setCurrentSessionId(last);
+      })
+      .catch(() => { /* 后端未启动：空态，首次发消息时再提示 */ });
+  }, []);
+
+  useEffect(() => {
+    if (currentSessionId) localStorage.setItem(LAST_SESSION_KEY, currentSessionId);
+    else localStorage.removeItem(LAST_SESSION_KEY);
+  }, [currentSessionId]);
+
+  // 首次发消息时建会话（标题取问题前 20 字），返回 id 供 SSE 携带；已有会话直接复用
+  async function ensureSession(question) {
+    if (currentSessionId) return currentSessionId;
+    const s = await createSession(question.slice(0, 20));
+    setCurrentSessionId(s.id);
+    fetchSessions().then(setSessions).catch(() => { /* 列表刷新失败不影响对话 */ });
+    return s.id;
+  }
+
+  const handleDeleteSession = async (id) => {
+    try {
+      await deleteSession(id);
+      setSessions((ss) => ss.filter((s) => s.id !== id));
+      if (id === currentSessionId) setCurrentSessionId(null); // 当前会话被删→回新会话空态
+    } catch (err) {
+      window.alert(err.message);
+    }
+  };
 
   // 地图按需出现：首个图层到达后 MapPanel 挂载（首次建 map）；此后图层删空也保留地图，
   // 避免收回/再滑入闪烁——刷新页面才回到无地图全宽对话态
@@ -77,7 +122,15 @@ export default function App() {
 
   return (
     <div className={`console${mapOpened ? " has-map" : ""}`}>
-      <ChatPanel onResult={handleResult} />
+      <SessionSidebar
+        sessions={sessions}
+        currentId={currentSessionId}
+        onSelect={setCurrentSessionId}
+        onNew={() => setCurrentSessionId(null)}
+        onDelete={handleDeleteSession}
+      />
+      <ChatPanel onResult={handleResult}
+        sessionId={currentSessionId} onEnsureSession={ensureSession} />
       {mapOpened && (
         <MapPanel
           layers={layers}

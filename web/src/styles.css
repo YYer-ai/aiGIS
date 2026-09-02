@@ -11,18 +11,14 @@ html, body, #root {
   font-family: system-ui, sans-serif;
 }
 
-/* 左列：对话面板——无地图时占满全宽；地图出现（.has-map）后收窄到 40% 平滑过渡 */
+/* 左列：对话面板——占据会话栏与地图之外的剩余宽度（会话栏 200/36px、
+   地图出现后固定 60%），地图滑入动画期间宽度随剩余空间连续变化 */
 .chat-panel {
-  flex: 0 0 100%;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #33363f;
   min-width: 0;
-  transition: flex-basis 0.4s ease;
-}
-
-.console.has-map .chat-panel {
-  flex: 0 0 40%;
 }
 
 .chat-header {
@@ -870,4 +866,157 @@ html, body, #root {
   color: #ff6b6b;
   font-size: 12px;
   overflow-wrap: anywhere;
+}
+
+/* ===== 会话侧栏（多会话管理） ===== */
+
+/* 左窄栏 200px，折叠后 36px 竖条 */
+.session-sidebar {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  background: #16181d;
+  border-right: 1px solid #33363f;
+  overflow: hidden;
+  transition: flex-basis 0.25s ease;
+}
+
+.session-sidebar.sidebar-collapsed {
+  flex-basis: 36px;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-expand {
+  width: 26px;
+  height: 26px;
+  background: #22252d;
+  border: 1px solid #33363f;
+  border-radius: 6px;
+  color: #9aa0ac;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sidebar-expand:hover {
+  color: #e6e6e6;
+  border-color: #2f6fdb;
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  font-weight: 600;
+  border-bottom: 1px solid #33363f;
+  background: #22252d;
+}
+
+.sidebar-new {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #33363f;
+  border-radius: 6px;
+  background: transparent;
+  color: #c8e1ff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sidebar-new:hover {
+  border-color: #2f6fdb;
+  background: #262a33;
+}
+
+.session-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.session-empty {
+  padding: 12px 8px;
+  font-size: 12px;
+  color: #9aa0ac;
+  text-align: center;
+}
+
+.session-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 26px 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.session-item:hover {
+  background: #22252d;
+}
+
+.session-item.active {
+  background: #262a33;
+}
+
+.session-item-title {
+  font-size: 13px;
+  color: #e6e6e6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-item.active .session-item-title {
+  color: #c8e1ff;
+}
+
+.session-item-time {
+  font-size: 11px;
+  color: #6f7683;
+}
+
+/* 删除钮：hover 会话项时浮现 */
+.session-del {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: none;
+  border: none;
+  background: transparent;
+  color: #9aa0ac;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.session-item:hover .session-del {
+  display: block;
+}
+
+.session-del:hover {
+  color: #ff6b6b;
+}
+
+.sidebar-collapse {
+  padding: 8px;
+  border: none;
+  border-top: 1px solid #33363f;
+  background: transparent;
+  color: #6f7683;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.sidebar-collapse:hover {
+  color: #c8e1ff;
+  background: #22252d;
 }

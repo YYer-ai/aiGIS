@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { streamQuery } from "./api.js";
+import { fetchMessages, streamQuery } from "./api.js";
 
 const EXAMPLES = [
   "三环内有多少个公园",
@@ -46,7 +46,7 @@ function ResultBody({ res, answer }) {
         </div>
       )}
       <div className="msg-meta">
-        查询成功 · {res.row_count} 行 · 尝试 {res.attempts} 次
+        查询成功 · {res.row_count} 行{res.attempts != null && <> · 尝试 {res.attempts} 次</>}
       </div>
       <button type="button" className="msg-detail-toggle" onClick={() => setShowDetail((v) => !v)}>
         详情 {showDetail ? "▴" : "▾"}
@@ -88,6 +88,21 @@ function ResultBody({ res, answer }) {
   );
 }
 
+// 后端持久化消息 → 前端消息形态：user 直取 content；assistant 由 content+meta
+// 还原可渲染 res（列/行明细未持久化，详情只保留 SQL，行数进 meta 行）
+function toRestored(m) {
+  if (m.role === "user") return { role: "user", text: m.content };
+  const meta = m.meta || {};
+  if (meta.chat_mode) {
+    return { role: "assistant", res: { chat_mode: true, answer: m.content, sql: meta.sql } };
+  }
+  if (meta.sql !== undefined && meta.row_count !== undefined) {
+    return { role: "assistant", res: { ok: true, answer: m.content, sql: meta.sql,
+      row_count: meta.row_count, columns: [], sample_rows: [] } };
+  }
+  return { role: "assistant", res: { ok: false, error: m.content } };
+}
+
 // 流式中的助手消息：阶段 + 已耗时 + SQL 浅色小字（总结阶段收起 SQL、显示 answer 逐字）。
 // chat 模式的 delta 是 LLM 原始 JSON 碎片（后端以 {"mode":...} 结构决策），过程区不展示改"思考中…"；
 // 耗时分级提示：>30s 慢生成说明，>90s 升级建议停止并给"停止"按钮
@@ -127,13 +142,30 @@ function StreamingMessage({ stage, sql, answer, elapsed, onStop }) {
   );
 }
 
-export default function ChatPanel({ onResult }) {
+export default function ChatPanel({ onResult, sessionId, onEnsureSession }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const listRef = useRef(null);
   const abortRef = useRef(null); // 当前流式请求的 AbortController（>90s"停止"按钮用）
+  const genRef = useRef(0);      // 会话代际：切换会话时 ++，使在途流式回调全部失效
+  const skipLoadRef = useRef(false); // 首发自动建会话引起的 sessionId 变化不重载消息
+
+  // 切换/恢复会话：sessionId 变化 → 重建消息流（null=新会话清空）；
+  // 在途流式请求作废（abort + 代际失效，防止回调写进新会话消息）
+  useEffect(() => {
+    if (skipLoadRef.current) { skipLoadRef.current = false; return; }
+    const gen = ++genRef.current;
+    abortRef.current?.abort();
+    if (sessionId) {
+      fetchMessages(sessionId)
+        .then((msgs) => { if (genRef.current === gen) setMessages(msgs.map(toRestored)); })
+        .catch(() => { /* 恢复失败：保持空态，不阻塞新提问 */ });
+    } else {
+      setMessages([]);
+    }
+  }, [sessionId]);
 
   // 新消息/流式更新/计时 → 自动滚到底
   useEffect(() => {
@@ -147,7 +179,7 @@ export default function ChatPanel({ onResult }) {
       prev.map((m, i) => (i === prev.length - 1 ? { ...m, ...patch } : m))
     );
 
-  function send(question) {
+  async function send(question) {
     question = (question ?? input).trim();
     if (!question || loading) return;
     setInput("");
@@ -163,6 +195,30 @@ export default function ChatPanel({ onResult }) {
     let finalRes = null;
     const controller = new AbortController();
     abortRef.current = controller;
+    const gen = genRef.current;
+    const alive = () => genRef.current === gen; // 会话被切换 → 本轮流式回调全部作废
+
+    // 未建会话时先自动创建（标题=问题前 20 字），后续 SSE 请求携带 session_id
+    let sid = sessionId;
+    if (onEnsureSession && !sid) {
+      skipLoadRef.current = true; // App 更新 sessionId 触发的重载 effect 跳过（消息已在本地）
+      try {
+        sid = await onEnsureSession(question);
+      } catch (err) {
+        skipLoadRef.current = false; // 会话未建成、sessionId 不变：归还跳过标记
+        clearInterval(timer);
+        setLoading(false);
+        abortRef.current = null;
+        patchLast({ streaming: false, res: { ok: false, error: err.message } });
+        return;
+      }
+      if (!alive()) { // 建会话期间用户切走了会话：放弃本轮流式
+        clearInterval(timer);
+        setLoading(false);
+        abortRef.current = null;
+        return;
+      }
+    }
 
     streamQuery(question, {
       onStatus: (stage) => {
@@ -182,21 +238,23 @@ export default function ChatPanel({ onResult }) {
       },
       onResult: (res) => {
         finalRes = res;
-        patchLast({ streaming: false, res });
+        if (alive()) patchLast({ streaming: false, res });
       },
       onError: (err) => {
         finalRes = { ok: false, error: err.message };
-        patchLast({ streaming: false, res: finalRes });
+        if (alive()) patchLast({ streaming: false, res: finalRes });
       },
       onAbort: () => {
         // 用户主动停止：终结为"已取消"（非报错样式）
         finalRes = { ok: false, cancelled: true };
-        patchLast({ streaming: false, res: finalRes });
+        if (alive()) patchLast({ streaming: false, res: finalRes });
       },
-    }, controller.signal).finally(() => {
+    }, { signal: controller.signal, sessionId: sid }).finally(() => {
       clearInterval(timer);
       setLoading(false);
       abortRef.current = null;
+      // 会话已切换：不再写消息（新会话消息由重载 effect 重建）
+      if (!alive()) return;
       // 兜底：流结束但既无 result 也无 error（如代理截断），终结消息避免卡在流式态
       if (!finalRes) {
         finalRes = { ok: false, error: "连接中断，未收到结果，请重试" };

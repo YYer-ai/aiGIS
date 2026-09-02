@@ -25,6 +25,43 @@ async function reqJson(r, fallback) {
   return body;
 }
 
+// ---------- 会话管理（多会话侧栏） ----------
+
+export async function fetchSessions() {
+  return reqJson(await fetch("/api/sessions").catch(() => { throw new Error(SVC_MSG); }),
+    "会话列表读取失败");
+}
+
+export async function createSession(title = "") {
+  return reqJson(await fetch("/api/sessions", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  }).catch(() => { throw new Error(SVC_MSG); }), "会话创建失败");
+}
+
+export async function deleteSession(id) {
+  return reqJson(
+    await fetch(`/api/sessions/${encodeURIComponent(id)}`, { method: "DELETE" })
+      .catch(() => { throw new Error(SVC_MSG); }),
+    "会话删除失败");
+}
+
+export async function renameSession(id, title) {
+  return reqJson(
+    await fetch(`/api/sessions/${encodeURIComponent(id)}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    }).catch(() => { throw new Error(SVC_MSG); }),
+    "会话重命名失败");
+}
+
+export async function fetchMessages(id) {
+  return reqJson(
+    await fetch(`/api/sessions/${encodeURIComponent(id)}/messages`)
+      .catch(() => { throw new Error(SVC_MSG); }),
+    "会话消息读取失败");
+}
+
 // ---------- 图层库（M5） ----------
 
 export async function fetchLayers() {
@@ -77,14 +114,18 @@ function dispatchFrame(frame, h) {
 }
 
 /**
- * SSE 流式提问：GET /api/query/stream?q=...
+ * SSE 流式提问：GET /api/query/stream?q=...&session_id=...
  * handlers: { onStatus(stage), onDelta(text), onAnswerDelta(text), onResult(res), onError(err), onAbort() }
- * signal: 可选 AbortSignal——abort 后调 onAbort（而非 onError 连接中断）
+ * opts: { signal?: AbortSignal——abort 后调 onAbort（而非 onError 连接中断）,
+ *         sessionId?: 会话 id——后端据此组装会话记忆并落库 }
  */
-export async function streamQuery(question, handlers = {}, signal) {
+export async function streamQuery(question, handlers = {}, opts = {}) {
+  const { signal, sessionId } = opts;
+  const qs = `q=${encodeURIComponent(question)}` +
+    (sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : "");
   let r;
   try {
-    r = await fetch(`/api/query/stream?q=${encodeURIComponent(question)}`, { signal });
+    r = await fetch(`/api/query/stream?${qs}`, { signal });
   } catch {
     if (signal?.aborted) { handlers.onAbort?.(); return; }
     handlers.onError?.(new Error("服务不可用——请运行项目根目录的 start_web.ps1 重启后端（机器重启后需重新启动）"));
