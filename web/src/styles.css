@@ -412,15 +412,27 @@ html, body, #root {
   cursor: not-allowed;
 }
 
-/* 右 60%：地图面板——按需挂载（.has-map 时），flex-basis 0→60% 滑入 */
+/* 右 60%：地图面板——首图层后挂载常驻（保实例防重建闪烁），显示跟随 .console.has-map：
+   有图层时 flex-basis 0→60% + 淡入滑入；出现时 visibility 立即生效（0s） */
 .map-panel {
   position: relative;
   flex: 0 0 60%;
   min-width: 0;
   overflow: hidden;
   animation: map-slide-in 0.4s ease;
+  transition: flex-basis 0.4s ease, opacity 0.4s ease, visibility 0s;
 }
 
+/* 图层删空：地图收起（flex-basis 归零 + 淡出），visibility 延迟到过渡结束再隐藏 */
+.console:not(.has-map) .map-panel {
+  flex-basis: 0%;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: flex-basis 0.4s ease, opacity 0.4s ease, visibility 0s 0.4s;
+}
+
+/* 仅首次挂载时播一次滑入（此后显隐走上面的 transition） */
 @keyframes map-slide-in {
   from { flex-basis: 0%; opacity: 0; }
   to { flex-basis: 60%; opacity: 1; }

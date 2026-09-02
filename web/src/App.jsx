@@ -54,12 +54,13 @@ export default function App() {
     }
   };
 
-  // 地图按需出现：首个图层到达后 MapPanel 挂载（首次建 map）；此后图层删空也保留地图，
-  // 避免收回/再滑入闪烁——刷新页面才回到无地图全宽对话态
+  // 地图跟随图层状态：首个图层到达后 MapPanel 挂载建 map 实例，此后保留实例避免重建闪烁；
+  // 显示开关用 showMap（图层删空收起、有图层滑入），仅刷新页面回到无地图全宽对话态
   const [mapOpened, setMapOpened] = useState(false);
   useEffect(() => {
     if (layers.length > 0) setMapOpened(true);
   }, [layers.length]);
+  const showMap = layers.length > 0;
 
   // 查询成功且含几何要素时叠加为新图层（计数类无 geometry 由 ChatPanel 摘要展示，不加图层）；
   // make 流结果（columns=["layer_name","label"] 约定）已是持久图层直接标 ♻，
@@ -121,7 +122,7 @@ export default function App() {
   };
 
   return (
-    <div className={`console${mapOpened ? " has-map" : ""}`}>
+    <div className={`console${showMap ? " has-map" : ""}`}>
       <SessionSidebar
         sessions={sessions}
         currentId={currentSessionId}

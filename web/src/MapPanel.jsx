@@ -504,6 +504,9 @@ export default function MapPanel({
       }
       syncLabelMarkers(map, srcId, l);
     }
+
+    // 面板从收起态（容器尺寸 0）重新显示时重算画布尺寸；幂等，正常显隐无副作用
+    if (layers.length > 0) map.resize();
   }, [layers, mapReady]);
 
   // PNG 导出：preserveDrawingBuffer 画布 → toDataURL → a[download] 落盘
