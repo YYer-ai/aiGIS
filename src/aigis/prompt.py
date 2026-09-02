@@ -48,9 +48,16 @@ def render_fewshot(shots: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def build_messages(question: str, schema_text: str) -> list[dict]:
-    """拼装 OpenAI messages：system（规则+few-shot）+ user（schema+问题）。"""
+def build_messages(question: str, schema_text: str,
+                   history: str | None = None) -> list[dict]:
+    """拼装 OpenAI messages：system（规则+few-shot）+ user（schema+问题）。
+
+    history：调用方拼好的最近对话文本（如"用户：…\n助手：…"），
+    插在 user 消息的问题之前，供指代消解（"那里/刚才的结果"类追问）。
+    """
     fewshot = render_fewshot(load_fewshot())
     system = SYSTEM_TEMPLATE.format(fewshot=fewshot)
-    user = f"数据库 schema（含中文注释与样本值）：\n{schema_text}\n\n问题：{question}"
+    ctx = f"对话上下文（最近对话，供指代消解）：\n{history}\n\n" if history else ""
+    user = (f"数据库 schema（含中文注释与样本值）：\n{schema_text}\n\n"
+            f"{ctx}问题：{question}")
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]

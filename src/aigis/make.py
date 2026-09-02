@@ -173,13 +173,14 @@ _MAKE_FEWSHOT: list[tuple[str, dict]] = [
 ]
 
 
-def _make_messages(question: str, schema_text: str, layers_text: str = "") -> list[dict]:
+def _make_messages(question: str, schema_text: str, layers_text: str = "",
+                   history: str | None = None) -> list[dict]:
     fewshot = "\n".join(f"问：{q}\nJSON：{json.dumps(d, ensure_ascii=False)}"
                         for q, d in _MAKE_FEWSHOT)
     system = _MAKE_SYSTEM_TEMPLATE.format(fewshot=fewshot)
+    ctx = f"对话上下文（最近对话，供指代消解）：\n{history}\n\n" if history else ""
     user = (f"数据库 schema（含中文注释与样本值）：\n{schema_text}\n\n"
-            f"{layers_text}\n"
-            f"制作指令：{question}")
+            f"{layers_text}\n{ctx}制作指令：{question}")
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
@@ -252,7 +253,8 @@ def _fetch(provider, system: str, user: str,
 
 def run_make_task(question: str, cfg: Config, provider=None, max_retries: int = 2,
                   on_delta: Callable[[str], None] | None = None,
-                  on_status: Callable[[str], None] | None = None) -> MakeOutcome:
+                  on_status: Callable[[str], None] | None = None,
+                  history: str | None = None) -> MakeOutcome:
     """制作主流程：prompt（注入已有图层清单）→ LLM 生成 JSON → make 校验 →
     maker 执行 → registry 注册 → 采样；解析/校验/执行失败回喂重试（同 repair 模式）。"""
     out = MakeOutcome()
@@ -265,7 +267,7 @@ def run_make_task(question: str, cfg: Config, provider=None, max_retries: int = 
             on_status(f"生成SQL（第{attempt}次）")  # 与查询流同文案：前端按此前缀重置 SQL 块
         msgs = _make_messages(
             question + (f"\n\n上次尝试失败，信息：{feedback}" if feedback else ""),
-            schema_text, layers_text)
+            schema_text, layers_text, history)
         try:
             raw = _fetch(provider, msgs[0]["content"], msgs[1]["content"], on_delta)
             data = json.loads(raw.strip().removeprefix("```json").removesuffix("```").strip())

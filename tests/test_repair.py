@@ -127,3 +127,38 @@ def test_run_query_stream_gives_up_without_callbacks(monkeypatch):
     provider.generate_stream.side_effect = lambda *a: iter([BAD])
     out = run_query_stream("x", Config(), max_retries=2, provider=provider)
     assert not out.ok and out.attempts == 2 and "nope" in out.error
+
+
+def test_run_query_passes_history_into_prompt(monkeypatch):
+    """history 透传：mock provider 捕获的 user 消息含对话上下文段（问题之前）。"""
+    monkeypatch.setattr("aigis.repair._cached_schema", lambda cfg: "SCHEMA")
+    ok_result = MagicMock(ok=True, columns=["n"], rows=[(42,)])
+    monkeypatch.setattr("aigis.repair.execute_readonly", lambda sql, cfg: ok_result)
+    provider = MagicMock()
+    provider.generate.return_value = GOOD
+    history = "用户：三环内有哪些区\n助手：西城、东城"
+    out = run_query("那里有多少兴趣点", Config(), provider=provider, history=history)
+    assert out.ok
+    user = provider.generate.call_args.args[1]
+    assert "对话上下文（最近对话，供指代消解）：" in user and history in user
+    assert user.index("对话上下文") < user.index("问题：那里有多少兴趣点")
+    # 无 history 时行为不变
+    provider2 = MagicMock()
+    provider2.generate.return_value = GOOD
+    run_query("x", Config(), provider=provider2)
+    assert "对话上下文" not in provider2.generate.call_args.args[1]
+
+
+def test_run_query_stream_passes_history_into_prompt(monkeypatch):
+    """流式版同样透传 history。"""
+    monkeypatch.setattr("aigis.repair._cached_schema", lambda cfg: "SCHEMA")
+    ok_result = MagicMock(ok=True, columns=["n"], rows=[(42,)])
+    monkeypatch.setattr("aigis.repair.execute_readonly", lambda sql, cfg: ok_result)
+    provider = MagicMock()
+    provider.generate_stream.return_value = iter([GOOD])
+    history = "用户：查过三环内公园"
+    out = run_query_stream("那里有几个地铁站", Config(), on_delta=lambda t: None,
+                           provider=provider, history=history)
+    assert out.ok
+    user = provider.generate_stream.call_args.args[1]
+    assert "对话上下文" in user and "查过三环内公园" in user

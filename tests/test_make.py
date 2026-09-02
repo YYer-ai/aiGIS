@@ -118,6 +118,21 @@ def test_run_make_task_llm_output_not_json(monkeypatch):
     assert not out.ok and not out.table_name and "解析" in out.error
 
 
+def test_run_make_task_passes_history_into_prompt(monkeypatch):
+    """history 透传：制作指令前的 user 消息含对话上下文（"把刚才的结果做成缓冲图层"）。"""
+    monkeypatch.setattr("aigis.make._cached_schema", lambda cfg: "SCHEMA")
+    monkeypatch.setattr("aigis.make._existing_layers_text", lambda cfg: "已有图层: 无\n")
+    provider = MagicMock()
+    provider.generate.return_value = "我不会写 SQL"  # 解析失败即返回，不触库
+    history = "用户：三环内有多少公园\n助手：共 12 个"
+    out = run_make_task("把刚才的结果做成缓冲图层", Config(),
+                        provider=provider, history=history)
+    assert not out.ok
+    user = provider.generate.call_args.args[1]
+    assert "对话上下文（最近对话，供指代消解）：" in user and history in user
+    assert user.index("对话上下文") < user.index("制作指令：把刚才的结果做成缓冲图层")
+
+
 @pytest.mark.integration
 def test_run_make_task_creates_registers_and_samples(clean_layer):
     """端到端：mock provider 返回合法 CTAS → 真库建表 → registry 注册 → 采样返回。"""

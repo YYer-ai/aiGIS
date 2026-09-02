@@ -58,7 +58,8 @@ def _fetch(provider, system: str, user: str,
 
 def _run(question: str, cfg: Config, max_retries: int, provider,
          on_delta: Callable[[str], None] | None = None,
-         on_status: Callable[[str], None] | None = None) -> Outcome:
+         on_status: Callable[[str], None] | None = None,
+         history: str | None = None) -> Outcome:
     out = Outcome(question=question)
     provider = provider or make_provider(cfg)
     schema_text = _cached_schema(cfg)
@@ -69,7 +70,7 @@ def _run(question: str, cfg: Config, max_retries: int, provider,
             on_status(f"生成SQL（第{attempt}次）")
         msgs = build_messages(
             question + (f"\n\n上次尝试失败，信息：{feedback}" if feedback else ""),
-            schema_text)
+            schema_text, history)
         raw = _fetch(provider, msgs[0]["content"], msgs[1]["content"], on_delta)
         try:
             data = _parse_llm_json(raw)
@@ -125,16 +126,18 @@ def _run(question: str, cfg: Config, max_retries: int, provider,
     return out
 
 
-def run_query(question: str, cfg: Config, max_retries: int = 3, provider=None) -> Outcome:
-    return _run(question, cfg, max_retries, provider)
+def run_query(question: str, cfg: Config, max_retries: int = 3, provider=None,
+              history: str | None = None) -> Outcome:
+    return _run(question, cfg, max_retries, provider, history=history)
 
 
 def run_query_stream(question: str, cfg: Config,
                      on_delta: Callable[[str], None] | None = None,
                      on_status: Callable[[str], None] | None = None,
-                     max_retries: int = 3, provider=None) -> Outcome:
+                     max_retries: int = 3, provider=None,
+                     history: str | None = None) -> Outcome:
     """与 run_query 同构的流式版：全部轮次的 LLM delta 逐段回调 on_delta。"""
-    return _run(question, cfg, max_retries, provider, on_delta, on_status)
+    return _run(question, cfg, max_retries, provider, on_delta, on_status, history)
 
 
 # 模块级缓存：同一数据库的 schema 只导出一次（重试/多次查询共享）

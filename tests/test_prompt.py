@@ -27,6 +27,24 @@ def test_build_messages():
     assert "SCHEMA_TEXT_HERE" in msgs[-1]["content"]
 
 
+def test_build_messages_with_history():
+    """history 插在 user 消息的问题之前（指代消解用），schema 仍在。"""
+    history = "用户：三环内有哪些公园\n助手：共 12 个公园"
+    msgs = build_messages("那里有多少地铁站", "SCHEMA_TEXT_HERE", history=history)
+    user = msgs[-1]["content"]
+    assert "对话上下文（最近对话，供指代消解）：\n" + history in user
+    assert user.index("对话上下文") < user.index("问题：那里有多少地铁站")
+    assert "SCHEMA_TEXT_HERE" in user
+
+
+def test_build_messages_without_history_unchanged():
+    """无 history（None/空串）时 user 内容与旧行为完全一致（兼容现测试）。"""
+    old = build_messages("三环内有多少公园", "SCHEMA")
+    assert "对话上下文" not in old[-1]["content"]
+    for h in (None, ""):
+        assert build_messages("三环内有多少公园", "SCHEMA", history=h) == old
+
+
 def test_build_messages_renders_chat_fewshot():
     """chat 条目渲染为 答（chat）：{json}，SQL 条目仍渲染为 SQL：，两者共存于 system。"""
     msgs = build_messages("交通不堵最方便的是哪个公园", "SCHEMA")
