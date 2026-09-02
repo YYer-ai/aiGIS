@@ -1,6 +1,9 @@
 # 环境与密钥
 .env
 
+# 运行时状态
+.web-server.pid
+
 # Python
 .venv/
 __pycache__/

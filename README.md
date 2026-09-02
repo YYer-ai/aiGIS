@@ -104,8 +104,9 @@ Agent 层做意图路由，两类能力走同一个循环：
 
 双栏网页版：左栏中文提问（展示 SQL / 推理过程 / 行数），右栏 MapLibre 地图自动叠加查询结果图层，支持图层显隐、删除与视角适配（最多保留最近 10 层）。
 
+- **一键启动**：`pwsh start_web.ps1` —— 自动检查并拉起 Docker Desktop、等 PostGIS 容器 healthy、按需构建前端、启动后端（PID 记录到 `.web-server.pid`）并打开浏览器。
+- **一键关闭**：`pwsh stop_web.ps1` —— 按 PID 文件停止后端（缺失时按 8000 端口兜底定位）；加 `-All` 连 PostGIS 容器一起停（默认不停，下次启动秒就绪）。
 - **开发模式**：先起后端 `uv run uvicorn aigis_web.app:app --port 8000`，再起前端 `cd web && npm run dev`，访问 <http://localhost:5173>（`/api` 自动代理到 8000）。
-- **生产模式**：`cd web && npm run build` 后仅起 uvicorn（同上命令），访问 <http://localhost:8000>（FastAPI 直接托管 `web/dist`）。
 
 ## 六、演进路线（不摊大饼）
 
