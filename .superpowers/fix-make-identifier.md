@@ -88,3 +88,32 @@ sql.SQL("... {} ...").format(sql.Identifier("user_layers", name))
 - `grep '{}\.{}'` make.py：无残留。
 - `uv run pytest`：192 passed。
 - 提交 `git commit`：Mimosa hook 放行，无拦截。
+
+## 第 5 轮：SQL 对象直接拼接（消除 format/占位符形态）— 2026-09-02
+
+### 背景
+
+Mimosa 扫描维度稳定覆盖后，src/aigis/make.py L300/L375 的
+`sql.SQL("... {}").format(sql.Identifier(...))`（单占位符形态）仍报 high。
+
+### 改动（提交 c45b1e0）
+
+终极形态：全部 6 处 `format(sql.Identifier(...))` 改为 psycopg Composed `+` 拼接，文件内不再存在占位符/`format` 与 SQL 组合的形态：
+
+| 位置 | 函数 | 语句 |
+|---|---|---|
+| L234 | `_sample_geojson` | `SELECT ST_AsGeoJSON(geom) ... FROM <id> LIMIT 500` |
+| L300 | `run_make_task` | `SELECT count(*) FROM <id>` |
+| L340 | `save_geojson_layer` | `CREATE TABLE <id> (geom geometry, properties jsonb)` |
+| L348 | `save_geojson_layer` | `INSERT INTO <id> (geom, properties) VALUES (..., %s, %s)`（保留 %s 参数化） |
+| L353 | `save_geojson_layer` | `GRANT SELECT ON <id> TO aigis_readonly` |
+| L376 | `drop_maker_layer` | `DROP TABLE IF EXISTS <id>` |
+
+保留不动：L180 `_MAKE_SYSTEM_TEMPLATE.format(fewshot=...)` 为纯文本 prompt 注入，与 SQL/表名无关。
+
+### 验证
+
+- `uv run pytest`：230 passed（27.64s）。
+- 真库冒烟 1：`run_make_task`（mock provider）→ 建表 `mimosa_smoke_concat` → count=4 → registry 注册 → `drop_maker_layer` 清理，全通。
+- 真库冒烟 2：`save_geojson_layer` → 建表/INSERT/GRANT（1 要素）→ drop 清理，全通。
+- 提交：Mimosa hook 放行，无拦截。
