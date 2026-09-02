@@ -231,9 +231,9 @@ def _connect_maker(cfg: Config):
 def _sample_geojson(cur, table_name: str) -> dict | None:
     """新图层 GeoJSON 采样：ST_AsGeoJSON(geom) 前 500 要素；失败降级 None 不影响制作。"""
     try:
-        cur.execute(sql.SQL(
-            "SELECT ST_AsGeoJSON(geom) AS geometry FROM {} LIMIT 500").format(
-            sql.Identifier("user_layers", table_name)))
+        cur.execute(sql.SQL("SELECT ST_AsGeoJSON(geom) AS geometry FROM ")
+                    + sql.Identifier("user_layers", table_name)
+                    + sql.SQL(" LIMIT 500"))
         return rows_to_geojson([d.name for d in cur.description], cur.fetchall())
     except psycopg.Error:
         return None
@@ -297,8 +297,8 @@ def run_make_task(question: str, cfg: Config, provider=None, max_retries: int = 
                         out.error = feedback
                         continue
                     # 执行失败不注册：以下三步都在建表成功之后
-                    cur.execute(sql.SQL("SELECT count(*) FROM {}").format(
-                        sql.Identifier("user_layers", out.table_name)))
+                    cur.execute(sql.SQL("SELECT count(*) FROM ")
+                                + sql.Identifier("user_layers", out.table_name))
                     out.feature_count = cur.fetchone()[0]
                     cur.execute(
                         "INSERT INTO user_layers.registry "
@@ -336,22 +336,23 @@ def save_geojson_layer(table_name: str, label: str, geojson: dict,
                 autocommit=True) as conn:
             with conn.cursor() as cur:
                 try:
-                    cur.execute(sql.SQL(
-                        "CREATE TABLE {} (geom geometry, properties jsonb)").format(
-                        sql.Identifier("user_layers", table_name)))
+                    cur.execute(sql.SQL("CREATE TABLE ")
+                                + sql.Identifier("user_layers", table_name)
+                                + sql.SQL(" (geom geometry, properties jsonb)"))
                 except psycopg.errors.DuplicateTable:
                     return False, f"图层 {table_name} 已存在，请换一个名字保存", 0
                 rows = [(json.dumps(f["geometry"]),
                          json.dumps(f.get("properties") or {}, ensure_ascii=False))
                         for f in feats]
-                cur.executemany(sql.SQL(
-                    "INSERT INTO {} (geom, properties) VALUES "
-                    "(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s::jsonb)").format(
-                    sql.Identifier("user_layers", table_name)),
+                cur.executemany(
+                    sql.SQL("INSERT INTO ")
+                    + sql.Identifier("user_layers", table_name)
+                    + sql.SQL(" (geom, properties) VALUES "
+                              "(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326), %s::jsonb)"),
                     rows)
-                cur.execute(sql.SQL(
-                    "GRANT SELECT ON {} TO aigis_readonly").format(
-                    sql.Identifier("user_layers", table_name)))
+                cur.execute(sql.SQL("GRANT SELECT ON ")
+                            + sql.Identifier("user_layers", table_name)
+                            + sql.SQL(" TO aigis_readonly"))
                 cur.execute(
                     "INSERT INTO user_layers.registry (layer_name, label, sql, feature_count) "
                     "VALUES (%s, %s, %s, %s)",
@@ -372,8 +373,8 @@ def drop_maker_layer(table_name: str, cfg: Config) -> tuple[bool, str]:
                 user=cfg.admin_user, password=cfg.admin_password,
                 autocommit=True) as conn:
             with conn.cursor() as cur:
-                cur.execute(sql.SQL("DROP TABLE IF EXISTS {}").format(
-                    sql.Identifier("user_layers", table_name)))
+                cur.execute(sql.SQL("DROP TABLE IF EXISTS ")
+                            + sql.Identifier("user_layers", table_name))
                 cur.execute("DELETE FROM user_layers.registry WHERE layer_name = %s",
                             (table_name,))
         return True, ""
