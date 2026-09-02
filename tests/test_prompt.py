@@ -3,7 +3,7 @@ import pytest
 
 from aigis.config import Config
 from aigis.executor import execute_readonly
-from aigis.prompt import build_messages, load_fewshot
+from aigis.prompt import build_messages, load_fewshot, render_fewshot
 from aigis.schema_export import DEFAULT_TABLES
 from aigis.validator import validate
 
@@ -11,7 +11,13 @@ from aigis.validator import validate
 def test_load_fewshot_default():
     shots = load_fewshot()
     assert len(shots) >= 15
-    assert all("question" in s and "sql" in s for s in shots)
+    # SQL 条目含 question+sql；chat 条目含 question+mode=chat+reply
+    for s in shots:
+        if s.get("mode") == "chat":
+            assert "question" in s and "reply" in s
+        else:
+            assert "question" in s and "sql" in s
+    assert sum(1 for s in shots if s.get("mode") == "chat") >= 3
 
 
 def test_build_messages():
@@ -21,8 +27,31 @@ def test_build_messages():
     assert "SCHEMA_TEXT_HERE" in msgs[-1]["content"]
 
 
+def test_build_messages_renders_chat_fewshot():
+    """chat 条目渲染为 答（chat）：{json}，SQL 条目仍渲染为 SQL：，两者共存于 system。"""
+    msgs = build_messages("交通不堵最方便的是哪个公园", "SCHEMA")
+    system = msgs[0]["content"]
+    assert "问：交通不堵最方便的是哪个公园\n答（chat）：{\"mode\":\"chat\",\"reply\":" in system
+    assert "问：今天天气怎么样\n答（chat）：" in system
+    assert "无法直接判断拥堵" in system  # chat 示例 reply 内容原样进入 prompt
+    assert "问：三环内有多少个公园\nSQL：" in system  # SQL 条目渲染不受影响
+
+
+def test_render_fewshot_chat_json_is_valid():
+    """chat 条目渲染出的 JSON 可被 json.loads 解析回 mode/reply。"""
+    import json
+    for s in load_fewshot():
+        if s.get("mode") == "chat":
+            rendered = render_fewshot([s])
+            payload = rendered.split("答（chat）：", 1)[1]
+            data = json.loads(payload)
+            assert data == {"mode": "chat", "reply": s["reply"]}
+
+
 # few-shot 自身合规性回归：防止将来手改样例引入过不了 validator 的坏 SQL
-@pytest.mark.parametrize("shot", load_fewshot(), ids=lambda s: s["question"][:20])
+# （chat 条目无 sql 字段，跳过——它本就不该生成 SQL）
+@pytest.mark.parametrize("shot", [s for s in load_fewshot() if "sql" in s],
+                         ids=lambda s: s["question"][:20])
 def test_fewshot_sql_passes_validator(shot):
     ok, reason = validate(shot["sql"], set(DEFAULT_TABLES))
     assert ok, f"few-shot [{shot['question']}] 不合规: {reason}"
@@ -34,7 +63,8 @@ def test_fewshot_sql_passes_validator(shot):
 # 而真执行比 EXPLAIN 验证更彻底（顺带抓 F3 类运行期错误）；
 # 安全性由 validator 白名单 + 只读账号 + statement_timeout 三层兜底
 @pytest.mark.integration
-@pytest.mark.parametrize("shot", load_fewshot(), ids=lambda s: s["question"][:20])
+@pytest.mark.parametrize("shot", [s for s in load_fewshot() if "sql" in s],
+                         ids=lambda s: s["question"][:20])
 def test_fewshot_sql_executes_on_real_db(shot):
     r = execute_readonly(shot["sql"], Config())
     assert r.ok, f"few-shot [{shot['question']}] 执行失败: {r.error}"

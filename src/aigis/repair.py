@@ -34,6 +34,10 @@ _CHAT_FALLBACK_SYSTEM = (
     "请直接给用户一句中文回复解释原因与建议。"
     '只输出一个 JSON 对象：{"mode":"chat","reply":"一句自然的中文回答"}，不要多余文本。')
 
+# 回喂提示：校验/执行失败轮追加，引导模型在问题本质上无法回答时转向 chat
+_CHAT_HINT = ('若该问题本质上无法用现有数据回答（如刚才因超时/错误失败），'
+              '可改用 {"mode":"chat","reply":"..."} 直接回复用户')
+
 
 def _parse_llm_json(text: str) -> dict:
     """剥掉 markdown 代码围栏后解析 LLM 输出的 JSON 对象。"""
@@ -91,7 +95,7 @@ def _run(question: str, cfg: Config, max_retries: int, provider,
         out.sql, out.reasoning = sql, reasoning
         ok, reason = validate(sql, set(DEFAULT_TABLES))
         if not ok:
-            feedback = f"校验未通过：{reason}"
+            feedback = f"校验未通过：{reason}。{_CHAT_HINT}"
             out.error = feedback
             continue
         if on_status:
@@ -101,7 +105,7 @@ def _run(question: str, cfg: Config, max_retries: int, provider,
             out.ok, out.columns, out.rows = True, result.columns, result.rows
             out.geojson = rows_to_geojson(result.columns, result.rows)
             return out
-        feedback = f"数据库执行错误：{result.error}"
+        feedback = f"数据库执行错误：{result.error}。{_CHAT_HINT}"
         out.error = feedback
     # 全部 SQL 尝试失败 → 降级 chat：追加一次 LLM 调用直接生成给用户的解释回复
     fallback_user = f"问题：{question}\n\n之前的 SQL 尝试均失败：{out.error or '未知错误'}"

@@ -56,6 +56,23 @@ def test_chat_mode_returns_directly_without_executing(monkeypatch):
     execute.assert_not_called()
 
 
+def test_validation_failure_retry_can_switch_to_chat(monkeypatch):
+    """回喂转 chat：第1轮 BAD SQL 校验失败 → feedback 含'可改用 chat'提示 → 第2轮 mode=chat → ok=True。"""
+    monkeypatch.setattr("aigis.repair._cached_schema", lambda cfg: "SCHEMA")
+    execute = MagicMock()
+    monkeypatch.setattr("aigis.repair.execute_readonly", execute)
+    provider = MagicMock()
+    provider.generate.side_effect = [BAD, CHAT]
+    out = run_query("交通不堵最方便的是哪个公园", Config(), provider=provider)
+    assert out.ok and out.chat_mode and out.attempts == 2
+    assert out.answer == CHAT_REPLY and out.error == ""
+    assert out.sql == "SELECT * FROM nope"  # 保留失败轮的 SQL 供追溯
+    # 第2轮回喂的 prompt 追加了转 chat 提示（校验失败轮才有，引导转向）
+    second_user = provider.generate.call_args_list[1].args[1]
+    assert "可改用" in second_user and '"mode":"chat"' in second_user
+    execute.assert_not_called()
+
+
 def test_chat_mode_stream_pushes_reply_as_delta(monkeypatch):
     """流式 chat：status(回答中) + reply 一次整段作为 on_delta 推送。"""
     monkeypatch.setattr("aigis.repair._cached_schema", lambda cfg: "SCHEMA")

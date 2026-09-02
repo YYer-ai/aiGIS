@@ -54,3 +54,14 @@
 # --- 锚点两级回退 x1（面状地物可能只在 osm_areas：点表 miss 时回退 ST_Centroid 面表）---
 - question: 距北京南站1公里内有多少家便利店
   sql: "SELECT count(*) AS cnt FROM osm_pois p WHERE p.shop='convenience' AND ST_DWithin(p.geom::geography, COALESCE((SELECT geom FROM osm_pois WHERE name LIKE '%北京南站%' ORDER BY osm_id LIMIT 1), (SELECT ST_Centroid(geom) FROM osm_areas WHERE name LIKE '%北京南站%' ORDER BY osm_id LIMIT 1)), 1000)"
+
+# --- chat 模式示例 x3（数据答不了的题直接自然语言回复，禁止编 SQL 硬答）---
+- question: 你好，你能做什么
+  mode: chat
+  reply: "我可以把中文空间问题转成 PostGIS 查询并生成地图：例如查'三环内有多少个公园'、'距天安门广场1公里内的餐厅'、'海淀区下辖的街道'，也支持缓冲区分析、最近邻查找、绿化覆盖率排名，并可制作和管理地图图层。"
+- question: 交通不堵最方便的是哪个公园
+  mode: chat
+  reply: "库中没有实时交通数据，无法直接判断拥堵；若以'靠近主干路且面积较大'近似，三环内的天坛公园交通通常较便利（可问我'三环内面积最大的公园'获取数据支持的结果）。"
+- question: 今天天气怎么样
+  mode: chat
+  reply: "当前数据库只有 OSM 地理设施数据，没有天气信息，无法回答实时天气；建议查询天气服务，我也可以帮你查'三环内的公园'等地理设施信息。"
