@@ -1,33 +1,7 @@
 # src/aigis/config.py
 from dataclasses import dataclass
 import os
-import tomllib
-from pathlib import Path
 from dotenv import load_dotenv
-
-_ROOT = Path(__file__).resolve().parent.parent.parent
-_TOML_PATH = _ROOT / "config.toml"
-
-# config.toml 运行参数默认值（[llm]/[session] 段；管理界面可改，见 aigis_web.settings_store）
-_TOML_DEFAULTS = {"thinking": "off", "temperature": 0.0, "timeout_seconds": 300,
-                  "history_rounds": 3, "history_char_limit": 200}
-
-
-def read_toml_settings() -> dict:
-    """config.toml [llm]/[session] 段合并默认值返回（文件缺失/损坏回落默认）。"""
-    try:
-        doc = tomllib.loads(_TOML_PATH.read_text("utf-8"))
-    except (OSError, ValueError):
-        return dict(_TOML_DEFAULTS)
-    out = dict(_TOML_DEFAULTS)
-    for section in ("llm", "session"):
-        sec = doc.get(section)
-        if isinstance(sec, dict):
-            for k in _TOML_DEFAULTS:
-                if k in sec:
-                    out[k] = sec[k]
-    return out
-
 
 @dataclass
 class Config:
@@ -43,12 +17,6 @@ class Config:
     llm_api_key: str = ""
     llm_base_url: str = "http://223.92.35.113:8001/v1"
     llm_model: str = "qwen3827b"
-    llm_thinking: str = "off"             # off/low/medium/high → extra_body.reasoning_effort
-    llm_temperature: float = 0.0
-    llm_timeout: float = 300.0
-    history_rounds: int = 3               # 会话上下文：保留最近 N 轮完整对话
-    history_char_limit: int = 200         # 会话上下文：单条历史截断字符数
-
 
 def load_config(env_file: str | None = None) -> Config:
     # 显式指定 env 文件时文件值优先（否则被 shell 已有环境变量遮蔽）；
@@ -56,7 +24,6 @@ def load_config(env_file: str | None = None) -> Config:
     load_dotenv(env_file, override=env_file is not None)
     # POSTGRES_USER/PASSWORD 是 .env 里的超管凭据 -> 挂管理账号（schema 导出/预处理）；
     # 引擎执行账号 db_user/db_password 恒为只读默认，不走 .env，保住只读执行纵深
-    toml = read_toml_settings()
     return Config(
         db_host=os.getenv("POSTGRES_HOST", "localhost"),
         db_port=int(os.getenv("POSTGRES_PORT", "5432")),
@@ -68,9 +35,4 @@ def load_config(env_file: str | None = None) -> Config:
         llm_api_key=os.getenv("LLM_API_KEY", ""),
         llm_base_url=os.getenv("LLM_BASE_URL", "http://223.92.35.113:8001/v1"),
         llm_model=os.getenv("LLM_MODEL", "qwen3827b"),
-        llm_thinking=str(toml["thinking"]),
-        llm_temperature=float(toml["temperature"]),
-        llm_timeout=float(toml["timeout_seconds"]),
-        history_rounds=int(toml["history_rounds"]),
-        history_char_limit=int(toml["history_char_limit"]),
     )

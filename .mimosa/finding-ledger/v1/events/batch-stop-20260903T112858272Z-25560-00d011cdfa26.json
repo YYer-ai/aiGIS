@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "mimosa-finding-ledger-batch/v1",
+  "batchId": "stop-20260903T112858272Z-25560-00d011cdfa26",
+  "runId": "20260903T112858272Z-25560-00d011cdfa26",
+  "runStatus": "completed",
+  "coverage": {
+    "status": "complete",
+    "reasons": []
+  },
+  "source": {
+    "component": "zcode-hook",
+    "operationId": "Stop"
+  },
+  "revision": "4fd1b9d3a825bff41c9171ad95d9ca15faaf2269",
+  "diffHash": "94e050857844ef3bb45b4e0ef32b836fdf6b7d255f4b05a5466590da71c5b27b",
+  "rulesVersion": "unavailable",
+  "sessionHash": "984ecca37359cb732ed0c621a8d8a39fb2dbd5ad91305ad4d38d02b982c62b31",
+  "reportRef": ".mimosa/reports/task-review-sess_5979f330-6121-4cb8-a07e-4bea187dd58c-20260903T112858272Z-25560-00d011cdfa26.json",
+  "events": [],
+  "observedFindingIds": [],
+  "verifiedFiles": [
+    {
+      "file": "web/src/MapPanel.jsx",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/aigis_web/settings_store.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/aigis/config.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/aigis/llm.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/aigis_web/schemas.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "src/aigis_web/app.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "web/src/api.js",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "web/src/SettingsPanel.jsx",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "web/src/App.jsx",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "tests/test_settings.py",
+      "direct": "complete",
+      "projectContext": "partial"
+    }
+  ],
+  "recordedAt": "2026-09-03T11:28:58.945Z"
+}

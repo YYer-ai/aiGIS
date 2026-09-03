@@ -16,22 +16,15 @@ class LLMProvider(Protocol):
 
 class OpenAICompatProvider:
     def __init__(self, base_url: str, api_key: str, model: str,
-                 timeout: float = 300.0, client=None,
-                 thinking: str = "off", temperature: float = 0.0):
+                 timeout: float = 300.0, client=None):
         self.model = model
         self._cli = client or OpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
-        # thinking != off 时附加 extra_body.reasoning_effort（OpenAI o 系/gpt-5 与多数
-        # 兼容后端方言）；后端不支持该参数会 4xx 报错，届时在配置界面切回 off 即可
-        self._extra = ({"reasoning_effort": thinking}
-                       if thinking in ("low", "medium", "high") else {})
-        self._temperature = temperature
 
     def generate(self, system: str, user: str) -> str:
         for attempt in (1, 2):  # 失败自动重试一次
             try:
                 resp = self._cli.chat.completions.create(
-                    model=self.model, temperature=self._temperature,
-                    extra_body=self._extra or None,
+                    model=self.model, temperature=0,
                     messages=[{"role": "system", "content": system},
                               {"role": "user", "content": user}])
                 return resp.choices[0].message.content
@@ -51,8 +44,7 @@ class OpenAICompatProvider:
         for attempt in (1, 2):
             try:
                 stream = self._cli.chat.completions.create(
-                    model=self.model, temperature=self._temperature,
-                    stream=True, extra_body=self._extra or None,
+                    model=self.model, temperature=0, stream=True,
                     messages=[{"role": "system", "content": system},
                               {"role": "user", "content": user}])
                 for chunk in stream:
@@ -75,9 +67,7 @@ def make_provider(cfg: Config) -> LLMProvider:
     if not cfg.llm_api_key:
         raise LLMError("缺少 LLM_API_KEY，请在 .env 配置")
     return OpenAICompatProvider(cfg.llm_base_url, cfg.llm_api_key,
-                                cfg.llm_model, timeout=cfg.llm_timeout,
-                                thinking=cfg.llm_thinking,
-                                temperature=cfg.llm_temperature)
+                                cfg.llm_model)
 
 
 _SUMMARY_SYSTEM = ("你是查询结果播报员。用一句自然的中文回答用户的问题，"

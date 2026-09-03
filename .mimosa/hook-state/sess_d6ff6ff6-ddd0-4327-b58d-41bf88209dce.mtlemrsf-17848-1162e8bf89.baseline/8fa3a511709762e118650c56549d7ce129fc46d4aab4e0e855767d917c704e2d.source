@@ -1,143 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 
-// —— 底图库（工具条"底图"菜单切换；preview 为菜单缩略块的 CSS 渐变） ——
-// crs: 底图坐标系。Carto/Esri/OpenFreeMap 均为 WGS-84，与 GeoJSON 数据天然对齐；
-// 高德系为 GCJ-02（火星坐标），选中时叠加图层坐标经 wgs2gcj 实时纠偏对齐（见 dataFor）
-const CARTO_TILES = (style) => ["a", "b", "c", "d"].map(
-  (s) => `https://${s}.basemaps.cartocdn.com/rastertiles/${style}/{z}/{x}/{y}@2x.png`);
-const ESRI_SAT_TILES =
-  ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"];
-const AMAP_SAT_TILES = [1, 2, 3, 4].map(
-  (n) => `https://webst0${n}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}`);
-const AMAP_STREET_TILES = [1, 2, 3, 4].map(
-  (n) => `https://webrd0${n}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}`);
-// 地形 DEM（Mapzen/AWS Open Data terrarium 高程瓦片）与 3D 建筑矢量瓦片（OpenFreeMap）
-const TERRAIN_DEM_TILES = ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"];
-const OPENFREEMAP_VEC_URL = "https://tiles.openfreemap.org/planet";
-
-const BASEMAPS = [
-  { id: "voyager", label: "街区图", kind: "raster", tiles: CARTO_TILES("voyager"), crs: "wgs84",
-    preview: "linear-gradient(135deg,#f8f4ec,#cfe3c9 55%,#f0d8a8)",
-    attribution: "© OpenStreetMap contributors © CARTO" },
-  { id: "positron", label: "浅色图", kind: "raster", tiles: CARTO_TILES("positron"), crs: "wgs84",
-    preview: "linear-gradient(135deg,#fafaf7,#e8e8e2 55%,#d8d8d2)",
-    attribution: "© OpenStreetMap contributors © CARTO" },
-  { id: "dark", label: "暗色图", kind: "raster", tiles: CARTO_TILES("dark_all"), crs: "wgs84",
-    preview: "linear-gradient(135deg,#17171c,#20222b 55%,#0f1218)",
-    attribution: "© OpenStreetMap contributors © CARTO" },
-  { id: "satellite", label: "卫星图", kind: "raster", tiles: ESRI_SAT_TILES, crs: "wgs84",
-    preview: "linear-gradient(135deg,#1e3a1c,#2e5426 55%,#12325a)",
-    attribution: "Esri, Maxar, Earthstar Geographics" },
-  { id: "terrain3d", label: "3D 地形", kind: "terrain", tiles: ESRI_SAT_TILES, crs: "wgs84",
-    preview: "linear-gradient(160deg,#3a4a2e 20%,#6b6350 55%,#241f1a)",
-    attribution: "Esri, Maxar；地形: Mapzen/AWS Open Data" },
-  { id: "buildings3d", label: "3D 建筑", kind: "buildings", tiles: ESRI_SAT_TILES, crs: "wgs84",
-    preview: "linear-gradient(180deg,#2b3038 40%,#8f8a80 41%,#454a52)",
-    attribution: "Esri, Maxar；建筑: OpenFreeMap/OSM" },
-  { id: "amap", label: "高德街道", kind: "raster", tiles: AMAP_STREET_TILES, crs: "gcj02",
-    preview: "linear-gradient(135deg,#f2efe9,#cfe0c8 55%,#f7e8c8)",
-    attribution: "© 高德" },
-  { id: "amap-sat", label: "高德卫星", kind: "raster", tiles: AMAP_SAT_TILES, crs: "gcj02",
-    preview: "linear-gradient(135deg,#22401f,#33562a 55%,#14304f)",
-    attribution: "© 高德" },
-];
-const DEFAULT_BASEMAP = "voyager"; // WGS-84 且国内可达：数据与底图零偏移
-const BASEMAP_STORAGE_KEY = "aigis:basemapId";
-
-// —— WGS-84 → GCJ-02（国测局加密坐标）公开近似算法：中国境内偏差 <2m，境外原样返回 ——
-const GCJ_A = 6378245.0;
-const GCJ_EE = 0.00669342162296594323;
-
-const gcjOffsetLat = (x, y) => {
-  let r = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
-  r += (20 * Math.sin(6 * x * Math.PI) + 20 * Math.sin(2 * x * Math.PI)) * 2 / 3;
-  r += (20 * Math.sin(y * Math.PI) + 40 * Math.sin(y / 3 * Math.PI)) * 2 / 3;
-  r += (160 * Math.sin(y / 12 * Math.PI) + 320 * Math.sin(y * Math.PI / 30)) * 2 / 3;
-  return r;
-};
-const gcjOffsetLng = (x, y) => {
-  let r = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
-  r += (20 * Math.sin(6 * x * Math.PI) + 20 * Math.sin(2 * x * Math.PI)) * 2 / 3;
-  r += (20 * Math.sin(x * Math.PI) + 40 * Math.sin(x / 3 * Math.PI)) * 2 / 3;
-  r += (150 * Math.sin(x / 12 * Math.PI) + 300 * Math.sin(x / 30 * Math.PI)) * 2 / 3;
-  return r;
-};
-
-/** [lng, lat]（WGS-84）→ [lng, lat]（GCJ-02）；境外坐标不受加密影响，直接原值返回 */
-export function wgs2gcj(lng, lat) {
-  if (lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271) return [lng, lat];
-  const dLat = gcjOffsetLat(lng - 105, lat - 35);
-  const dLng = gcjOffsetLng(lng - 105, lat - 35);
-  const radLat = (lat / 180) * Math.PI;
-  let magic = 1 - GCJ_EE * Math.sin(radLat) ** 2;
-  const sqrtMagic = Math.sqrt(magic);
-  magic = (dLat * 180) / ((GCJ_A * (1 - GCJ_EE)) / (magic * sqrtMagic) * Math.PI);
-  const d = (dLng * 180) / ((GCJ_A / sqrtMagic) * Math.cos(radLat) * Math.PI);
-  return [lng + d, lat + magic];
-}
-
-/** GeoJSON 整体坐标平移（浅克隆，不改原对象）：fn([lng,lat])→[lng,lat]，
- * 保留坐标第 3 位起的高程等附加值；供 GCJ-02 底图下纠偏叠加数据 */
-export function shiftGeojson(geojson, fn) {
-  const walk = (c) => {
-    if (typeof c[0] === "number" && typeof c[1] === "number") {
-      const t = fn(c);
-      return [t[0], t[1], ...c.slice(2)];
-    }
-    return c.map(walk);
-  };
-  if (!geojson?.features) return geojson;
-  return {
-    ...geojson,
-    features: geojson.features.map((f) => (f?.geometry
-      ? { ...f, geometry: { ...f.geometry, coordinates: walk(f.geometry.coordinates) } }
-      : f)),
-  };
-}
-
-/** 底图应用：清旧 bm-* 图层/source（含地形）→ 按底图类型加栅格/DEM/矢量建筑层；
- * 全部插到第一个数据图层（lyr-*）之下，保证叠加结果始终在底图之上；幂等可重入 */
-function applyBasemap(map, bm) {
-  map.setTerrain(null);
-  for (const id of ["bm-buildings", "bm-hillshade", "bm-base"]) {
-    if (map.getLayer(id)) map.removeLayer(id);
-  }
-  for (const id of ["bm-base", "bm-dem", "bm-vec"]) {
-    if (map.getSource(id)) map.removeSource(id);
-  }
-  if (!bm) return;
-  const before = map.getStyle().layers.find((l) => l.id.startsWith("lyr-"))?.id;
-  if (bm.tiles) {
-    map.addSource("bm-base",
-      { type: "raster", tiles: bm.tiles, tileSize: 256, attribution: bm.attribution });
-    map.addLayer({ id: "bm-base", type: "raster", source: "bm-base" }, before);
-  }
-  if (bm.kind === "terrain") {
-    map.addSource("bm-dem", {
-      type: "raster-dem", tiles: TERRAIN_DEM_TILES, encoding: "terrarium",
-      tileSize: 256, maxzoom: 15, attribution: "Terrain: Mapzen, AWS Open Data",
-    });
-    map.setTerrain({ source: "bm-dem", exaggeration: 1.25 });
-    map.addLayer({
-      id: "bm-hillshade", type: "hillshade", source: "bm-dem",
-      paint: { "hillshade-exaggeration": 0.35, "hillshade-shadow-color": "#22242c" },
-    }, before);
-  }
-  if (bm.kind === "buildings") {
-    map.addSource("bm-vec", { type: "vector", url: OPENFREEMAP_VEC_URL });
-    map.addLayer({
-      id: "bm-buildings", type: "fill-extrusion", source: "bm-vec",
-      "source-layer": "building", minzoom: 14,
-      paint: {
-        "fill-extrusion-color": "#cfc9c2",
-        "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
-        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-        "fill-extrusion-opacity": 0.92,
-      },
-    }, before);
-  }
-}
+// 底图瓦片：默认高德（OSM 国内不可达）；海外环境可把下方 tiles 换成 [OSM_TILE_URL]
+const AMAP_TILE_URL =
+  "https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}";
+const OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 // 标注字形（SDF pbf）：OpenFreeMap 公共字体服务（Noto Sans，覆盖拉丁/数字）。
 // 公共服务暂无 CJK pbf——中文列标注走 maplibregl.Marker DOM 方案（见 syncLabelMarkers）
@@ -477,15 +344,6 @@ export default function MapPanel({
   const [libOpen, setLibOpen] = useState(false);      // 图层库抽屉
   const [lib, setLib] = useState({ loading: false, error: "", rows: null });
   const [libBusy, setLibBusy] = useState("");         // 正在加载/删除的 layer_name
-  const [bmOpen, setBmOpen] = useState(false);        // 底图菜单
-  const [basemapId, setBasemapId] = useState(() => {  // 持久化底图选择，非法值回落默认
-    const saved = localStorage.getItem(BASEMAP_STORAGE_KEY);
-    return BASEMAPS.some((b) => b.id === saved) ? saved : DEFAULT_BASEMAP;
-  });
-
-  const gcjCacheRef = useRef({});       // srcId -> {src, out}：wgs→gcj 转换结果缓存（同数据复用）
-  const basemap = BASEMAPS.find((b) => b.id === basemapId) || BASEMAPS[0];
-  const inGCJ = basemap.crs === "gcj02";
 
   // 随机色存 ref（父组件未传 color 时兜底），避免每次渲染变色
   const colorOf = (l) =>
@@ -501,24 +359,22 @@ export default function MapPanel({
   };
 
   /** 标注列含非 ASCII → 前 80 个要素建 div Marker（class map-label，白字描边 CSS）；
-   * 坐标 Point 直取、线/面取首坐标对（GCJ-02 底图下同步纠偏）。
-   * sig（列|可见|数据引用|坐标系）不变则跳过重建 */
-  const syncLabelMarkers = (map, srcId, l, crs) => {
+   * 坐标 Point 直取、线/面取首坐标对。sig（列|可见|数据引用）不变则跳过重建 */
+  const syncLabelMarkers = (map, srcId, l) => {
     const col = l.style?.label?.column;
     const want = (col && !columnIsAscii(l.geojson, col))
-      ? { column: col, visible: l.visible !== false, data: l.geojson, crs } : null;
+      ? { column: col, visible: l.visible !== false, data: l.geojson } : null;
     const prev = markerSigRef.current[srcId];
     if (prev?.column === want?.column && prev?.visible === want?.visible
-        && prev?.data === want?.data && prev?.crs === want?.crs) return;
-    clearLabelMarkers(srcId); // 标注关闭/切列/数据变/隐藏/换坐标系：先清再按需重建
+        && prev?.data === want?.data) return;
+    clearLabelMarkers(srcId); // 标注关闭/切列/数据变/隐藏：先清再按需重建
     markerSigRef.current[srcId] = want;
     if (!want?.visible) return;
     const markers = [];
     for (const f of (l.geojson?.features || []).slice(0, LABEL_MARKER_LIMIT)) {
-      let pos = firstCoord(f?.geometry);
+      const pos = firstCoord(f?.geometry);
       const v = f?.properties?.[col];
       if (!pos || v == null || v === "") continue;
-      if (crs === "gcj02") pos = wgs2gcj(pos[0], pos[1]);
       const el = document.createElement("div");
       el.className = "map-label";
       el.textContent = String(v);
@@ -529,13 +385,17 @@ export default function MapPanel({
   };
 
   // Step 1: 初始化地图（useRef 防严格模式重复初始化；cleanup 移除实例）；
-  // preserveDrawingBuffer 供 PNG 导出读取画布，glyphs 供标注 symbol 层渲染文字；
-  // 底图不在此写死——由 Step 1.5 的 basemap effect 统一应用（含 localStorage 记忆）
+  // preserveDrawingBuffer 供 PNG 导出读取画布，glyphs 供标注 symbol 层渲染文字
   useEffect(() => {
     if (mapRef.current) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: { version: 8, glyphs: GLYPHS_URL, sources: {}, layers: [] },
+      style: {
+        version: 8,
+        glyphs: GLYPHS_URL,
+        sources: { basemap: { type: "raster", tiles: [AMAP_TILE_URL], tileSize: 256 } },
+        layers: [{ id: "basemap", type: "raster", source: "basemap" }],
+      },
       center: [116.4, 39.9],
       zoom: 10,
       preserveDrawingBuffer: true,
@@ -549,36 +409,9 @@ export default function MapPanel({
     };
   }, []);
 
-  // Step 1.5: 底图切换——重建 bm-* 底图层；3D 类底图抬 pitch 展示立体效果，平面类回正。
-  // 选择写入 localStorage；幂等，初次 load 与后续切换走同一路径
-  useEffect(() => {
-    if (!mapReady) return;
-    const map = mapRef.current;
-    applyBasemap(map, basemap);
-    const pitch = (basemap.kind === "terrain" || basemap.kind === "buildings") ? 58 : 0;
-    if (map.getPitch() !== pitch) map.easeTo({ pitch, duration: 500 });
-  }, [basemapId, mapReady]); // basemap 由 basemapId 派生，此处仅作意图标注
-
-  const chooseBasemap = (id) => {
-    setBasemapId(id);
-    localStorage.setItem(BASEMAP_STORAGE_KEY, id);
-  };
-
-  /** 当前底图下的渲染数据：GCJ-02 底图（高德）返回 wgs→gcj 纠偏副本（按源数据引用缓存），
-   *  WGS-84 底图返回原数据——底图与数据坐标系一致，叠加层不再偏移 */
-  const dataFor = (srcId, l) => {
-    if (!inGCJ) return l.geojson;
-    let c = gcjCacheRef.current[srcId];
-    if (c?.src === l.geojson) return c.out;
-    c = { src: l.geojson, out: shiftGeojson(l.geojson, (p) => wgs2gcj(p[0], p[1])) };
-    gcjCacheRef.current[srcId] = c;
-    return c.out;
-  };
-
   // Step 2: 图层同步——新增加 source/子图层+fitBounds；数据替换 setData（如 make 层
   // 采样→全量补全）；样式变化 setPaintProperty（classify/gradient/颜色/透明度/半径/线宽）
-  // + 标注增删（ASCII 列走 symbol 子层，含中文走 DOM Marker）；visible 切 setLayoutProperty；删除移除。
-  // 底图坐标系变化（wgs84↔gcj02）时经 dataFor 重取数据触发 setData 重刷
+  // + 标注增删（ASCII 列走 symbol 子层，含中文走 DOM Marker）；visible 切 setLayoutProperty；删除移除
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
@@ -607,18 +440,17 @@ export default function MapPanel({
       }
       map.removeSource(srcId);
       clearLabelMarkers(srcId);
-      delete gcjCacheRef.current[srcId];
       delete colorsRef.current[srcId.slice(4)];
       delete layerStateRef.current[srcId];
     }
 
     for (const l of layers) {
       const srcId = `lyr-${l.id}`;
-      const data = dataFor(srcId, l);
       const expr = colorExpression(l.style, l.geojson, colorOf(l));
       const sig = JSON.stringify(l.style ?? null);
+      const st = layerStateRef.current[srcId];
       if (!map.getSource(srcId)) {
-        map.addSource(srcId, { type: "geojson", data });
+        map.addSource(srcId, { type: "geojson", data: l.geojson });
         const kinds = geometryKinds(l.geojson);
         if (kinds.has("pt")) {
           map.addLayer({
@@ -652,31 +484,30 @@ export default function MapPanel({
           map.on("mouseleave", sub, onFeatureLeave);
         }
         syncLabelLayer(map, srcId, l.style, l.geojson);
-        layerStateRef.current[srcId] = { data, sig };
-        // 新增图层飞行到其范围（用纠偏后数据，保证与当前底图对齐）
-        const bbox = bboxOf(data);
+        layerStateRef.current[srcId] = { data: l.geojson, sig };
+        // 新增图层飞行到其范围
+        const bbox = bboxOf(l.geojson);
         if (bbox) map.fitBounds(bbox, { padding: 48, maxZoom: 15, duration: 600 });
-      } else {
-        const st = layerStateRef.current[srcId];
-        const dataChanged = !st || st.data !== data;
-        const styleChanged = !st || st.sig !== sig;
-        if (dataChanged) map.getSource(srcId).setData(data);
-        if (dataChanged || styleChanged) {
-          applyStyle(srcId, l, expr); // 设色表达式依赖数据，数据变也重刷
-          layerStateRef.current[srcId] = { data, sig };
-        }
+      } else if (st && st.data !== l.geojson) {
+        map.getSource(srcId).setData(l.geojson); // 数据替换（引用不同即变）
+        applyStyle(srcId, l, expr);              // 设色表达式依赖数据，一并重刷
+        layerStateRef.current[srcId] = { data: l.geojson, sig };
+      } else if (!st || st.sig !== sig) {
+        // 样式变化：paint 逐属性更新（无结构变化，事件绑定保持有效）；标注层单独增删/改
+        applyStyle(srcId, l, expr);
+        layerStateRef.current[srcId] = { data: l.geojson, sig };
       }
       // 可见性开关（对全部子图层生效，含标注）；中文标注 Marker 单独同步
       const vis = l.visible === false ? "none" : "visible";
       for (const sub of subLayerIds(srcId)) {
         if (map.getLayer(sub)) map.setLayoutProperty(sub, "visibility", vis);
       }
-      syncLabelMarkers(map, srcId, l, basemap.crs);
+      syncLabelMarkers(map, srcId, l);
     }
 
     // 面板从收起态（容器尺寸 0）重新显示时重算画布尺寸；幂等，正常显隐无副作用
     if (layers.length > 0) map.resize();
-  }, [layers, mapReady, inGCJ]);
+  }, [layers, mapReady]);
 
   // PNG 导出：preserveDrawingBuffer 画布 → toDataURL → a[download] 落盘
   const exportPng = () => {
@@ -701,7 +532,6 @@ export default function MapPanel({
   const toggleLib = () => {
     if (libOpen) { setLibOpen(false); return; }
     setLibOpen(true);
-    setBmOpen(false);
     if (!lib.rows) refreshLib();
   };
 
@@ -735,10 +565,6 @@ export default function MapPanel({
     <div className="map-panel" id="map-panel">
       <div className="map-canvas" ref={containerRef} />
       <div className="map-toolbar">
-        <button type="button" className="tool-btn" onClick={() => { setBmOpen(!bmOpen); setLibOpen(false); }}
-          title="切换底图：街区/卫星/3D 地形/3D 建筑等">
-          🗺 底图
-        </button>
         <button type="button" className="tool-btn" onClick={toggleLib} title="浏览/加载/删除持久图层">
           ♻ 图层库
         </button>
@@ -746,25 +572,6 @@ export default function MapPanel({
           📷 导出PNG
         </button>
       </div>
-      {bmOpen && (
-        <div className="basemap-menu">
-          <div className="library-head">
-            底图
-            <button type="button" className="library-close" onClick={() => setBmOpen(false)}>×</button>
-          </div>
-          {BASEMAPS.map((b) => (
-            <button type="button" key={b.id}
-              className={`basemap-row${b.id === basemapId ? " active" : ""}`}
-              onClick={() => { chooseBasemap(b.id); setBmOpen(false); }}>
-              <span className="basemap-preview" style={{ background: b.preview }} />
-              <span className="basemap-label">{b.label}</span>
-              {b.crs === "gcj02" && <span className="basemap-tag" title="GCJ-02 底图：叠加数据已自动纠偏对齐">纠偏</span>}
-              {b.id === basemapId && <span className="basemap-check">✓</span>}
-            </button>
-          ))}
-          <div className="basemap-hint">3D 建筑需放大到 14 级以上；高德系底图为 GCJ-02，叠加数据已自动纠偏对齐</div>
-        </div>
-      )}
       {libOpen && (
         <div className="layer-library">
           <div className="library-head">

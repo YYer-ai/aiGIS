@@ -1,0 +1,723 @@
+import json
+from unittest.mock import patch, MagicMock
+
+import pytest
+from fastapi.testclient import TestClient
+from aigis_web.app import _MAKE_INTENT_RE, create_app
+
+def _mock_outcome(ok=True, rows=None, geojson=None, error=""):
+    m = MagicMock()
+    m.ok = ok; m.sql = "SELECT 1"; m.reasoning = "r"; m.attempts = 1
+    m.rows = rows or []; m.columns = ["count"]; m.geojson = geojson; m.error = error
+    m.chat_mode = False; m.answer = ""  # 显式设默认，避免 MagicMock 属性 truthy
+    return m
+
+def test_query_ok():
+    with patch("aigis_web.app.run_query", return_value=_mock_outcome(rows=[(292,), (7,)], geojson={"type": "FeatureCollection", "features": []})), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["查询", "完成"])):
+        c = TestClient(create_app())
+        r = c.post("/api/query", json={"question": "三环内有多少个公园"})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["ok"] and body["row_count"] == 2 and body["sql"] == "SELECT 1"
+        assert body["sample_rows"] == [["292"], ["7"]]  # 前 10 行 str(v)，供前端表格
+        assert body["answer"] == "查询完成"  # 同步端点非流式拿全 answer
+
+def test_query_llm_error_502():
+    from aigis.llm import LLMError
+    with patch("aigis_web.app.run_query", side_effect=LLMError("缺少 LLM_API_KEY")):
+        c = TestClient(create_app())
+        r = c.post("/api/query", json={"question": "x"})
+        assert r.status_code == 502 and "LLM_API_KEY" in r.json()["error"]
+
+def test_query_db_error_502():
+    import psycopg
+    with patch("aigis_web.app.run_query", side_effect=psycopg.OperationalError("conn refused")):
+        c = TestClient(create_app())
+        r = c.post("/api/query", json={"question": "x"})
+        assert r.status_code == 502 and "数据库" in r.json()["error"]
+
+def test_query_timeout_502():
+    from psycopg.errors import QueryCanceled  # 继承 OperationalError，sqlstate=57014
+    with patch("aigis_web.app.run_query",
+               side_effect=QueryCanceled("canceling statement due to statement timeout")):
+        c = TestClient(create_app())
+        r = c.post("/api/query", json={"question": "x"})
+        assert r.status_code == 502 and "超时" in r.json()["error"]
+
+def test_empty_question_422():
+    c = TestClient(create_app())
+    r = c.post("/api/query", json={"question": "  "})
+    assert r.status_code == 422
+
+
+def _stream_lines(client, q, session_id=None):
+    params = {"q": q}
+    if session_id:
+        params["session_id"] = session_id
+    with client.stream("GET", "/api/query/stream", params=params) as r:
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith("text/event-stream")
+        return list(r.iter_lines())
+
+
+def test_stream_event_sequence():
+    """SSE 事件按序：status(理解问题) → status(生成SQL) → delta → status(总结中) → answer_delta → result。"""
+    seen_questions = []
+
+    def fake_run(question, cfg, on_delta=None, on_status=None, **kw):
+        seen_questions.append(question)  # 中文 q 经 URL 解码后原样到达
+        on_status("生成SQL（第1次）")
+        on_delta("SELECT 1")
+        on_delta(" FR\nOM parks")  # 含换行的 chunk：SSE data 内 JSON 转义后应原样往返
+        return _mock_outcome(rows=[(292,)],
+                             geojson={"type": "FeatureCollection", "features": []})
+
+    with patch("aigis_web.app.run_query_stream", side_effect=fake_run), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["查询完成"])):
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "三环内有多少个公园")
+
+    assert seen_questions == ["三环内有多少个公园"]
+    events = [l for l in lines if l.startswith("event: ")]
+    assert events == ["event: status", "event: status", "event: delta", "event: delta",
+                      "event: status", "event: answer_delta", "event: result"]
+    joined = "\n".join(lines)
+    assert '{"stage": "理解问题"}' in joined
+    assert '{"stage": "生成SQL（第1次）"}' in joined
+    assert '{"stage": "总结中"}' in joined
+    assert '{"text": "SELECT 1"}' in joined
+    assert '{"text": " FR\\nOM parks"}' in joined  # 换行经 JSON 转义，单行 data 原样往返
+    assert '{"text": "查询完成"}' in joined
+    assert '"sql": "SELECT 1"' in joined and '"ok": true' in joined
+    assert '"sample_rows": [["292"]]' in joined
+    assert '"answer": "查询完成"' in joined  # result 内含完整 answer
+
+
+def test_stream_answer_multi_delta():
+    """answer_delta 逐 token 流出，result.answer 为拼接全文。"""
+    def fake_run(question, cfg, on_delta=None, on_status=None, **kw):
+        return _mock_outcome(rows=[(292,)],
+                             geojson={"type": "FeatureCollection", "features": []})
+
+    tokens = ["三环内", "共有 ", "292 个公园"]
+    with patch("aigis_web.app.run_query_stream", side_effect=fake_run), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(tokens)):
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "三环内有多少个公园")
+
+    events = [l for l in lines if l.startswith("event: ")]
+    assert events == ["event: status", "event: status",
+                      "event: answer_delta", "event: answer_delta", "event: answer_delta",
+                      "event: result"]
+    joined = "\n".join(lines)
+    for t in tokens:
+        assert f'{{"text": "{t}"}}' in joined
+    assert '"answer": "三环内共有 292 个公园"' in joined
+
+
+def test_stream_no_answer_on_failed_query():
+    """执行失败（ok=False）：不进入总结，result 无 answer 内容（空串）。"""
+    def fake_run(question, cfg, on_delta=None, on_status=None, **kw):
+        return _mock_outcome(ok=False, error="SQL 语法错误")
+
+    with patch("aigis_web.app.run_query_stream", side_effect=fake_run), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["不应被调用"])) as sm:
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "x")
+
+    sm.assert_not_called()
+    events = [l for l in lines if l.startswith("event: ")]
+    assert events == ["event: status", "event: result"]
+    assert '"answer": ""' in "\n".join(lines)
+
+
+def test_stream_llm_error_event():
+    from aigis.llm import LLMError
+    with patch("aigis_web.app.run_query_stream", side_effect=LLMError("缺少 LLM_API_KEY")):
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "x")
+    assert "event: error" in lines
+    assert "LLM_API_KEY" in "\n".join(lines)
+
+
+# ---------- chat 模式（AI 判定无需 SQL，直接回复） ----------
+
+CHAT_REPLY = "当前数据不含实时交通信息，可查询三环内公园分布"
+
+
+def test_query_chat_mode_skips_summary():
+    """chat 模式：同步端点直接用 Outcome.answer，不再 summarize。"""
+    out = _mock_outcome()
+    out.chat_mode = True
+    out.answer = CHAT_REPLY
+    with patch("aigis_web.app.run_query", return_value=out), \
+         patch("aigis_web.app.summarize") as sm:
+        c = TestClient(create_app())
+        r = c.post("/api/query", json={"question": "交通不堵的公园是哪个"})
+    sm.assert_not_called()
+    assert r.status_code == 200
+    assert r.json()["chat_mode"] is True and r.json()["answer"] == CHAT_REPLY
+
+
+def test_stream_chat_mode_events():
+    """SSE chat：status(回答中) → delta(reply) → result(chat_mode/answer)；
+    跳过"总结中"与 answer_delta（answer 已有）。"""
+    def fake_run(question, cfg, on_delta=None, on_status=None, **kw):
+        on_status("回答中")
+        on_delta(CHAT_REPLY)
+        out = _mock_outcome(geojson=None)
+        out.chat_mode = True
+        out.answer = CHAT_REPLY
+        return out
+
+    with patch("aigis_web.app.run_query_stream", side_effect=fake_run), \
+         patch("aigis_web.app.summarize") as sm:
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "交通不堵的公园是哪个")
+    sm.assert_not_called()
+    events = [l for l in lines if l.startswith("event: ")]
+    assert events == ["event: status", "event: status", "event: delta", "event: result"]
+    joined = "\n".join(lines)
+    assert '{"stage": "回答中"}' in joined
+    assert f'{{"text": "{CHAT_REPLY}"}}' in joined
+    assert '"chat_mode": true' in joined
+    assert f'"answer": "{CHAT_REPLY}"' in joined
+
+
+def test_stream_empty_q_422():
+    c = TestClient(create_app())
+    r = c.get("/api/query/stream", params={"q": "   "})
+    assert r.status_code == 422 and "问题不能为空" in r.json()["error"]
+
+
+# ---------- 意图路由（制作关键词正则） ----------
+
+@pytest.mark.parametrize("q,hit", [
+    ("把三环内的公园做500米缓冲区生成新图层", True),   # 生成.{0,6}图层
+    ("把道路裁剪到四环范围内，做成新图层", True),        # 做成
+    ("把这个结果保存为图层", True),                     # 保存为图层
+    ("帮我新建图层存放区县质心", True),               # 新建图层（连续字面）
+    ("帮我新建一个测试图层存放区县质心", True),        # 新建.{0,6}图层（间隔表述，M5 放宽）
+    ("把公园和河流叠加成图层", True),                   # 叠加.{0,4}图层
+    ("把同名公园面合并成新图层", True),                 # 合并.{0,6}图层
+    ("对河流做200米缓冲后保存为图层", True),            # 缓冲.{0,8}图层
+    ("三环内有多少个公园", False),
+    ("查询地铁站在三环内的分布", False),
+    ("长安街有多长", False),
+])
+def test_make_intent_regex(q, hit):
+    assert bool(_MAKE_INTENT_RE.search(q)) is hit
+
+
+def _mock_make_outcome(ok=True, error="", table_name="x", label="测试图层",
+                       feature_count=20, geojson=None):
+    m = MagicMock()
+    m.ok = ok; m.error = error; m.table_name = table_name; m.label = label
+    m.feature_count = feature_count
+    m.sql = f"CREATE TABLE user_layers.{table_name} AS SELECT 1"
+    m.geojson = geojson if geojson is not None else {
+        "type": "FeatureCollection", "features": []}
+    return m
+
+
+def test_stream_make_flow_event_sequence():
+    """制作关键词命中 → make 流：status(理解制作需求)→status(生成SQL)→delta
+    →status(总结中)→answer_delta→result（QueryResponse 兼容结构）。"""
+    def fake_make(question, cfg, on_delta=None, on_status=None, **kw):
+        on_status("生成SQL（第1次）")
+        on_delta("CREATE TABLE user_layers.x AS SELECT 1")
+        return _mock_make_outcome()
+    with patch("aigis_web.app.run_make_task", side_effect=fake_make), \
+         patch("aigis_web.app.run_query_stream") as rq, \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["已生成图层"])):
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "把三环内的公园做500米缓冲区生成新图层")
+    rq.assert_not_called()  # 路由命中：不进查询流
+    events = [l for l in lines if l.startswith("event: ")]
+    assert events == ["event: status", "event: status", "event: delta",
+                      "event: status", "event: answer_delta", "event: result"]
+    joined = "\n".join(lines)
+    assert '{"stage": "理解制作需求"}' in joined
+    assert '{"stage": "生成SQL（第1次）"}' in joined
+    assert '"columns": ["layer_name", "label"]' in joined
+    assert '"sample_rows": [["x", "测试图层"]]' in joined
+    assert '"row_count": 20' in joined and '"ok": true' in joined
+    assert '"answer": "已生成图层"' in joined
+
+
+def test_stream_make_failure_error_event():
+    """make 失败：SSE error 事件带原始错误 + 改用查询表述提示，无 result。"""
+    with patch("aigis_web.app.run_make_task",
+               return_value=_mock_make_outcome(ok=False, error="制作 SQL 校验未通过：仅允许 CREATE TABLE")), \
+         patch("aigis_web.app.summarize") as sm:
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "生成一个测试图层")
+    sm.assert_not_called()
+    joined = "\n".join(lines)
+    assert "event: error" in lines and "event: result" not in lines
+    assert "校验未通过" in joined and "查询表述" in joined
+
+
+def test_stream_non_make_question_goes_query_flow():
+    """普通查询不进 make 流，首事件仍为「理解问题」。"""
+    with patch("aigis_web.app.run_make_task") as rm, \
+         patch("aigis_web.app.run_query_stream",
+               side_effect=lambda q, cfg, on_delta=None, on_status=None, **kw:
+                     _mock_outcome(rows=[(1,)], geojson={"type": "FeatureCollection", "features": []})), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["查询完成"])):
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "三环内有多少个公园")
+    rm.assert_not_called()
+    assert '{"stage": "理解问题"}' in "\n".join(lines)
+
+
+# ---------- 图层库 CRUD ----------
+
+def _mock_conn(rows=None, fetchone=None, description=None):
+    """psycopg.connect 的 mock：with conn, with cur 两层上下文均直通。"""
+    cur = MagicMock()
+    cur.fetchall.return_value = rows or []
+    cur.fetchone.return_value = fetchone
+    cur.description = description
+    conn = MagicMock()
+    conn.__enter__.return_value = conn
+    conn.__exit__.return_value = False
+    conn.cursor.return_value.__enter__.return_value = cur
+    conn.cursor.return_value.__exit__.return_value = False
+    return conn
+
+
+def test_list_layers_200():
+    import datetime
+    conn = _mock_conn(rows=[("parks_buf", "公园缓冲", 20,
+                             datetime.datetime(2026, 8, 27, 12, 0))])
+    with patch("aigis_web.app.psycopg.connect", return_value=conn):
+        c = TestClient(create_app())
+        r = c.get("/api/layers")
+    assert r.status_code == 200
+    assert r.json() == [{"layer_name": "parks_buf", "label": "公园缓冲",
+                         "feature_count": 20, "created_at": "2026-08-27 12:00:00"}]
+
+
+def test_layer_geojson_unregistered_404():
+    conn = _mock_conn(fetchone=None)  # registry 查无此层
+    with patch("aigis_web.app.psycopg.connect", return_value=conn):
+        c = TestClient(create_app())
+        r = c.get("/api/layers/evil_layer/geojson")
+    assert r.status_code == 404
+
+
+def test_layer_geojson_bad_name_404():
+    c = TestClient(create_app())
+    r = c.get("/api/layers/Registry/geojson")  # 大写非法名：正则层直接拒，不连库
+    assert r.status_code == 404
+
+
+def test_delete_layer_unregistered_404():
+    conn = _mock_conn(fetchone=None)
+    with patch("aigis_web.app.psycopg.connect", return_value=conn):
+        c = TestClient(create_app())
+        r = c.delete("/api/layers/no_such")
+    assert r.status_code == 404
+
+
+def test_delete_layer_ok():
+    conn = _mock_conn(fetchone=(1,))
+    with patch("aigis_web.app.psycopg.connect", return_value=conn), \
+         patch("aigis_web.app.drop_maker_layer", return_value=(True, "")) as drop:
+        c = TestClient(create_app())
+        r = c.delete("/api/layers/parks_buf")
+    assert r.status_code == 200 and r.json() == {"deleted": "parks_buf"}
+    drop.assert_called_once()
+
+
+# ---------- 保存临时图层（POST /api/layers/save，M5） ----------
+
+def _save_body(name="my_layer", label="我的图层"):
+    return {"name": name, "label": label, "geojson": {"type": "FeatureCollection", "features": [
+        {"type": "Feature", "geometry": {"type": "Point", "coordinates": [116.4, 39.9]},
+         "properties": {"name": "测试点"}}]}}
+
+
+def test_save_layer_bad_name_400():
+    c = TestClient(create_app())
+    r = c.post("/api/layers/save", json=_save_body(name="Bad Name"))
+    assert r.status_code == 400 and "非法" in r.json()["error"]
+
+
+def test_save_layer_no_geometry_400():
+    c = TestClient(create_app())
+    r = c.post("/api/layers/save",
+               json={"name": "my_layer", "label": "x",
+                     "geojson": {"features": [{"properties": {"a": 1}}]}})
+    assert r.status_code == 400 and "没有带几何" in r.json()["error"]
+
+
+def test_save_layer_duplicate_409():
+    with patch("aigis_web.app.save_geojson_layer",
+               return_value=(False, "图层 my_layer 已存在，请换一个名字保存", 0)):
+        c = TestClient(create_app())
+        r = c.post("/api/layers/save", json=_save_body())
+    assert r.status_code == 409 and "已存在" in r.json()["error"]
+
+
+@pytest.fixture()
+def clean_m5_layer():
+    """真库 save 闭环前后幂等清理。"""
+    from aigis.config import Config
+    from aigis.make import drop_maker_layer
+    drop_maker_layer("test_m5_layer", Config())
+    yield
+    drop_maker_layer("test_m5_layer", Config())
+
+
+@pytest.mark.integration
+def test_save_layer_roundtrip(clean_m5_layer):
+    """真库闭环：保存（中文属性）→ 列表可见 → geojson 取回（只读通道验证 GRANT，
+    属性 jsonb 上提还原）→ 重名 409 → DELETE → 404。"""
+    c = TestClient(create_app())
+    r = c.post("/api/layers/save", json=_save_body(name="test_m5_layer", label="M5保存"))
+    assert r.status_code == 200, r.json()
+    assert r.json() == {"layer_name": "test_m5_layer", "label": "M5保存", "feature_count": 1}
+    assert "test_m5_layer" in [i["layer_name"] for i in c.get("/api/layers").json()]
+
+    r = c.get("/api/layers/test_m5_layer/geojson")
+    assert r.status_code == 200
+    feats = r.json()["features"]
+    assert len(feats) == 1
+    assert feats[0]["properties"] == {"name": "测试点"}  # jsonb 上提，非嵌套
+    assert feats[0]["geometry"]["type"] == "Point"
+    assert feats[0]["geometry"]["coordinates"] == [116.4, 39.9]
+
+    r = c.post("/api/layers/save", json=_save_body(name="test_m5_layer"))
+    assert r.status_code == 409  # 重名拒绝
+
+    assert c.delete("/api/layers/test_m5_layer").status_code == 200
+    assert c.get("/api/layers/test_m5_layer/geojson").status_code == 404
+
+
+@pytest.fixture()
+def clean_layer():
+    """真库 CRUD 用例前后幂等清理（同 test_make.py）。"""
+    from aigis.config import Config
+    from aigis.make import drop_maker_layer
+    drop_maker_layer("test_m3_layer", Config())
+    yield
+    drop_maker_layer("test_m3_layer", Config())
+
+
+@pytest.mark.integration
+def test_layers_crud_roundtrip(clean_layer):
+    """真库三态全链路：make 建注册 → 列表 → geojson → DELETE 清理 → 404。"""
+    from aigis.config import Config
+    from aigis.make import run_make_task
+    provider = MagicMock()
+    provider.generate.return_value = json.dumps({
+        "table_name": "test_m3_layer",
+        "sql": "CREATE TABLE user_layers.test_m3_layer AS "
+               "SELECT name, geom FROM osm_pois LIMIT 20",
+        "label": "M4测试图层"}, ensure_ascii=False)
+    assert run_make_task("x", Config(), provider=provider).ok
+    c = TestClient(create_app())
+
+    names = [item["layer_name"] for item in c.get("/api/layers").json()]
+    assert "test_m3_layer" in names
+
+    r = c.get("/api/layers/test_m3_layer/geojson")
+    assert r.status_code == 200
+    gj = r.json()
+    assert gj["type"] == "FeatureCollection" and len(gj["features"]) == 20
+    assert all("geom" not in f["properties"] for f in gj["features"])  # WKB 列已剔除
+
+    assert c.delete("/api/layers/test_m3_layer").json() == {"deleted": "test_m3_layer"}
+    assert c.get("/api/layers/test_m3_layer/geojson").status_code == 404
+    assert c.delete("/api/layers/test_m3_layer").status_code == 404
+    assert "test_m3_layer" not in [
+        item["layer_name"] for item in c.get("/api/layers").json()]
+
+
+# ---------- 会话 CRUD + SSE 会话集成 + 混合记忆（T4） ----------
+
+@pytest.fixture
+def db(tmp_path, monkeypatch):
+    import aigis_web.store as st
+    monkeypatch.setattr(st, "_DB_PATH", tmp_path / "chat.db")
+    return st
+
+
+def test_sessions_crud_lifecycle(db):
+    """三态：创建（含空标题/显式标题）→ 列表 → PATCH 改名 → DELETE → 404。"""
+    c = TestClient(create_app())
+    assert c.get("/api/sessions").json() == []
+    r = c.post("/api/sessions", json={})
+    assert r.status_code == 201
+    s = r.json()
+    assert s["id"] and s["title"] == "" and s["summary"] == ""
+    r2 = c.post("/api/sessions", json={"title": "手动命名"})
+    assert r2.status_code == 201 and r2.json()["title"] == "手动命名"
+    assert {i["id"] for i in c.get("/api/sessions").json()} == {s["id"], r2.json()["id"]}
+
+    sid = s["id"]
+    assert c.patch(f"/api/sessions/{sid}",
+                   json={"title": "新标题"}).json()["title"] == "新标题"
+    assert c.patch(f"/api/sessions/{sid}", json={"title": "  "}).status_code == 400
+    assert c.patch("/api/sessions/nope", json={"title": "x"}).status_code == 404
+
+    # 空标题会话的首条消息自动取前 20 字为标题（store 行为经列表透出）
+    s3 = c.post("/api/sessions", json={}).json()
+    db.append_message(s3["id"], "user", "三环内有多少个公园分布情况统计")
+    titles = {i["id"]: i["title"] for i in c.get("/api/sessions").json()}
+    assert titles[s3["id"]] == "三环内有多少个公园分布情况统计"
+
+    assert c.delete(f"/api/sessions/{sid}").json() == {"deleted": sid}
+    assert c.delete(f"/api/sessions/{sid}").status_code == 404
+    assert {i["id"] for i in c.get("/api/sessions").json()} == {r2.json()["id"], s3["id"]}
+
+
+def test_session_messages_endpoint(db):
+    c = TestClient(create_app())
+    sid = c.post("/api/sessions", json={"title": "m"}).json()["id"]
+    db.append_message(sid, "user", "q1")
+    db.append_message(sid, "assistant", "a1", {"sql": "SELECT 1", "row_count": 1})
+    msgs = c.get(f"/api/sessions/{sid}/messages").json()
+    assert [m["role"] for m in msgs] == ["user", "assistant"]  # 正序全量
+    assert msgs[1]["meta"]["sql"] == "SELECT 1"
+    assert msgs[1]["summarized"] == 0
+    assert c.get("/api/sessions/nope/messages").status_code == 404
+
+
+def test_session_delete_cascades_messages(db):
+    c = TestClient(create_app())
+    sid = c.post("/api/sessions", json={}).json()["id"]
+    db.append_message(sid, "user", "q")
+    assert c.delete(f"/api/sessions/{sid}").status_code == 200
+    assert db.get_messages(sid) == []
+
+
+def test_history_line_assistant_fallbacks_and_truncation():
+    from aigis_web.app import _history_line
+    assert _history_line({"role": "user", "content": "q", "meta": {}}) == "用户：q"
+    assert _history_line({"role": "assistant", "content": "a", "meta": {}}) == "助手：a"
+    assert _history_line({"role": "assistant", "content": "",
+                          "meta": {"table_name": "lyr"}}) == "助手：已创建图层lyr"
+    assert _history_line({"role": "assistant", "content": "",
+                          "meta": {"sql": "SELECT 1"}}) == "助手：SELECT 1"
+    assert len(_history_line({"role": "user", "content": "长" * 250,
+                              "meta": {}})) == 203  # 每条截断 200 字 + 前缀 3 字
+
+
+def test_stream_with_session_history_and_record(db):
+    """带 session：history = 摘要前缀 + 最近轮（"用户：/助手："行）；
+    请求后 user/assistant 消息成对落库（assistant 带 meta）。"""
+    sid = db.create_session("s")["id"]
+    db.set_summary(sid, "用户此前查询了三环内公园")
+    db.append_message(sid, "user", "三环内有多少个公园")
+    db.append_message(sid, "assistant", "共 292 个",
+                      {"sql": "SELECT count(*)", "chat_mode": False, "row_count": 292})
+    seen = {}
+
+    def fake_run(question, cfg, on_delta=None, on_status=None, history=None, **kw):
+        seen["history"] = history
+        return _mock_outcome(rows=[(7,)],
+                             geojson={"type": "FeatureCollection", "features": []})
+
+    with patch("aigis_web.app.run_query_stream", side_effect=fake_run), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["共 7 个"])):
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "那四环呢", session_id=sid)
+
+    assert "历史摘要：用户此前查询了三环内公园" in seen["history"]
+    assert "用户：三环内有多少个公园" in seen["history"]
+    assert "助手：共 292 个" in seen["history"]
+    assert '"answer": "共 7 个"' in "\n".join(lines)
+    msgs = db.get_messages(sid)
+    assert [m["role"] for m in msgs] == ["user", "assistant", "user", "assistant"]
+    assert msgs[2]["content"] == "那四环呢"
+    assert msgs[3]["content"] == "共 7 个"
+    assert msgs[3]["meta"] == {"sql": "SELECT 1", "chat_mode": False, "row_count": 1}
+
+
+def test_stream_without_session_history_none():
+    """无 session 回归：history=None，不触 store。"""
+    seen = {}
+
+    def fake_run(question, cfg, on_delta=None, on_status=None, history=None, **kw):
+        seen["history"] = history
+        return _mock_outcome(geojson={"type": "FeatureCollection", "features": []})
+
+    with patch("aigis_web.app.run_query_stream", side_effect=fake_run), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["完成"])):
+        c = TestClient(create_app())
+        _stream_lines(c, "三环内有多少个公园")
+    assert seen["history"] is None
+
+
+def test_stream_unknown_session_404():
+    c = TestClient(create_app())
+    r = c.get("/api/query/stream", params={"q": "x", "session_id": "nope"})
+    assert r.status_code == 404 and "不存在" in r.json()["error"]
+
+
+def test_stream_summary_merge_triggered(db):
+    """窗口外未摘要 ≥4 条（10 条 = RECENT_N*2+4）→ LLM 增量合并 → set_summary
+    + mark_summarized；合并结果即时作为本次 history 前缀。"""
+    sid = db.create_session("s")["id"]
+    for i in range(1, 11):  # 消息1..10：窗口外=1..4（4 条），窗口内=5..10
+        db.append_message(sid, "user" if i % 2 else "assistant", f"消息{i}")
+    provider = MagicMock()
+    provider.generate.return_value = "  用户查询了公园与地铁。  "
+    seen = {}
+
+    def fake_run(question, cfg, on_delta=None, on_status=None, history=None, **kw):
+        seen["history"] = history
+        return _mock_outcome(geojson={"type": "FeatureCollection", "features": []})
+
+    with patch("aigis_web.app.make_provider", return_value=provider), \
+         patch("aigis_web.app.run_query_stream", side_effect=fake_run), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["完成"])):
+        c = TestClient(create_app())
+        _stream_lines(c, "继续", session_id=sid)
+
+    assert db.get_session(sid)["summary"] == "用户查询了公园与地铁。"  # 已 strip
+    assert db.summarized_count(sid) == 4
+    user_arg = provider.generate.call_args[0][1]  # 非流式 generate 的 user prompt
+    assert "既有摘要:" in user_arg
+    assert "用户：消息1" in user_arg and "助手：消息4" in user_arg
+    # 合并后：摘要进前缀，窗口内 6 条仍完整，当前问题不重复进 history
+    assert "历史摘要：用户查询了公园与地铁。" in seen["history"]
+    assert "用户：消息5" in seen["history"] and "助手：消息10" in seen["history"]
+    assert "继续" not in seen["history"]
+
+
+def test_stream_summary_not_triggered_below_threshold(db):
+    """窗口外 3 条 < 4：不触发摘要合并。"""
+    sid = db.create_session("s")["id"]
+    for i in range(1, 10):  # 9 条：窗口外 3 条
+        db.append_message(sid, "user" if i % 2 else "assistant", f"m{i}")
+    with patch("aigis_web.app.make_provider") as mp, \
+         patch("aigis_web.app.run_query_stream",
+               side_effect=lambda q, cfg, on_delta=None, on_status=None,
+                             history=None, **kw: _mock_outcome()), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["完成"])):
+        c = TestClient(create_app())
+        _stream_lines(c, "继续", session_id=sid)
+    mp.assert_not_called()
+    assert db.get_session(sid)["summary"] == ""
+    assert db.summarized_count(sid) == 0
+
+
+def test_stream_summary_merge_llm_failure_silent(db):
+    """LLM 失败静默跳过：summary 不更新、不标记（下次再试），主流程不受影响。"""
+    from aigis.llm import LLMError
+    sid = db.create_session("s")["id"]
+    for i in range(1, 11):
+        db.append_message(sid, "user" if i % 2 else "assistant", f"m{i}")
+    provider = MagicMock()
+    provider.generate.side_effect = LLMError("缺少 LLM_API_KEY")
+
+    with patch("aigis_web.app.make_provider", return_value=provider), \
+         patch("aigis_web.app.run_query_stream",
+               side_effect=lambda q, cfg, on_delta=None, on_status=None,
+                             history=None, **kw: _mock_outcome()), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["完成"])):
+        c = TestClient(create_app())
+        lines = _stream_lines(c, "继续", session_id=sid)
+    assert db.get_session(sid)["summary"] == ""
+    assert db.summarized_count(sid) == 0
+    assert "event: result" in lines
+
+
+def test_stream_failed_query_error_recorded(db):
+    """查询失败（ok=False）：assistant 消息记录 error 文本。"""
+    sid = db.create_session("s")["id"]
+
+    def fake_run(question, cfg, on_delta=None, on_status=None, history=None, **kw):
+        return _mock_outcome(ok=False, error="SQL 语法错误")
+
+    with patch("aigis_web.app.run_query_stream", side_effect=fake_run):
+        c = TestClient(create_app())
+        _stream_lines(c, "q", session_id=sid)
+    msgs = db.get_messages(sid)
+    assert [m["role"] for m in msgs] == ["user", "assistant"]
+    assert msgs[1]["content"] == "SQL 语法错误"
+
+
+def test_stream_make_with_session_records_table_name(db):
+    """make 流带 session：assistant meta 含 table_name。"""
+    sid = db.create_session("s")["id"]
+    seen = {}
+
+    def fake_make(question, cfg, on_delta=None, on_status=None, history=None, **kw):
+        seen["history"] = history
+        return _mock_make_outcome()
+
+    with patch("aigis_web.app.run_make_task", side_effect=fake_make), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["已生成图层"])):
+        c = TestClient(create_app())
+        _stream_lines(c, "把三环内的公园做500米缓冲区生成新图层", session_id=sid)
+    assert seen["history"] is None  # 新会话无历史
+    msgs = db.get_messages(sid)
+    assert [m["role"] for m in msgs] == ["user", "assistant"]
+    assert msgs[1]["content"] == "已生成图层"
+    assert msgs[1]["meta"]["table_name"] == "x"
+    assert msgs[1]["meta"]["row_count"] == 20
+
+
+def test_sync_query_with_session_appends_and_history(db):
+    """同步端点带 session：history 传入引擎，user/assistant 成对落库。"""
+    sid = db.create_session("s")["id"]
+    db.append_message(sid, "user", "三环内有多少个公园")
+    db.append_message(sid, "assistant", "共 292 个",
+                      {"sql": "SELECT 1", "chat_mode": False, "row_count": 292})
+    seen = {}
+
+    def fake_run(question, cfg, history=None):
+        seen["history"] = history
+        return _mock_outcome(rows=[(7,)],
+                             geojson={"type": "FeatureCollection", "features": []})
+
+    with patch("aigis_web.app.run_query", side_effect=fake_run), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["共 7 个"])):
+        c = TestClient(create_app())
+        r = c.post("/api/query", json={"question": "那四环呢", "session_id": sid})
+    assert r.status_code == 200 and r.json()["answer"] == "共 7 个"
+    assert "用户：三环内有多少个公园" in seen["history"]
+    msgs = db.get_messages(sid)
+    assert [m["role"] for m in msgs] == ["user", "assistant", "user", "assistant"]
+    assert msgs[3]["content"] == "共 7 个"
+
+
+def test_sync_query_no_summary_trigger(db):
+    """同步端点轻量：窗口外 ≥4 条也不触发摘要合并。"""
+    sid = db.create_session("s")["id"]
+    for i in range(1, 11):
+        db.append_message(sid, "user" if i % 2 else "assistant", f"m{i}")
+    with patch("aigis_web.app.make_provider") as mp, \
+         patch("aigis_web.app.run_query",
+               side_effect=lambda q, cfg, history=None: _mock_outcome()), \
+         patch("aigis_web.app.summarize", side_effect=lambda *a: iter(["x"])):
+        c = TestClient(create_app())
+        assert c.post("/api/query",
+                      json={"question": "q", "session_id": sid}).status_code == 200
+    mp.assert_not_called()
+    assert db.summarized_count(sid) == 0
+
+
+def test_sync_query_unknown_session_404(db):
+    c = TestClient(create_app())
+    r = c.post("/api/query", json={"question": "q", "session_id": "nope"})
+    assert r.status_code == 404
+
+
+def test_sync_query_error_recorded(db):
+    """同步端点异常路径也记录 assistant error 消息。"""
+    from aigis.llm import LLMError
+    sid = db.create_session("s")["id"]
+    with patch("aigis_web.app.run_query", side_effect=LLMError("缺少 LLM_API_KEY")):
+        c = TestClient(create_app())
+        r = c.post("/api/query", json={"question": "q", "session_id": sid})
+    assert r.status_code == 502
+    msgs = db.get_messages(sid)
+    assert [m["role"] for m in msgs] == ["user", "assistant"]
+    assert "LLM_API_KEY" in msgs[1]["content"]

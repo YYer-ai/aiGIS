@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import ChatPanel from "./ChatPanel.jsx";
 import MapPanel from "./MapPanel.jsx";
 import SessionSidebar from "./SessionSidebar.jsx";
-import SettingsPanel from "./SettingsPanel.jsx";
 import {
   createSession, deleteLayer, deleteSession, fetchLayerGeojson, fetchLayers,
   fetchSessions, saveLayer,
@@ -122,51 +121,31 @@ export default function App() {
     setLayers((ls) => ls.filter((l) => l.layerName !== layerName));
   };
 
-  // 顶部导航视图切换：chat=百图通对话台，settings=模型配置（运维）。
-  // 隐藏而非卸载百图通视图——保留地图实例、会话列表与进行中的对话状态
-  const [view, setView] = useState("chat");
-
   return (
-    <div className="app-shell">
-      <header className="topnav">
-        <span className="topnav-brand">百图通 <i>AI-GIS</i></span>
-        <nav className="topnav-tabs">
-          <button type="button" className={view === "chat" ? "active" : ""}
-            onClick={() => setView("chat")}>
-            💬 百图通
-          </button>
-          <button type="button" className={view === "settings" ? "active" : ""}
-            onClick={() => setView("settings")}>
-            ⚙ 模型配置
-          </button>
-        </nav>
-      </header>
-      <div className={`console${showMap ? " has-map" : ""}${view === "settings" ? " hidden" : ""}`}>
-        <SessionSidebar
-          sessions={sessions}
-          currentId={currentSessionId}
-          onSelect={setCurrentSessionId}
-          onNew={() => setCurrentSessionId(null)}
-          onDelete={handleDeleteSession}
+    <div className={`console${showMap ? " has-map" : ""}`}>
+      <SessionSidebar
+        sessions={sessions}
+        currentId={currentSessionId}
+        onSelect={setCurrentSessionId}
+        onNew={() => setCurrentSessionId(null)}
+        onDelete={handleDeleteSession}
+      />
+      <ChatPanel onResult={handleResult}
+        sessionId={currentSessionId} onEnsureSession={ensureSession} />
+      {mapOpened && (
+        <MapPanel
+          layers={layers}
+          onToggle={(id) =>
+            setLayers((ls) => ls.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l)))
+          }
+          onRemove={(id) => setLayers((ls) => ls.filter((l) => l.id !== id))}
+          onStyle={handleStyle}
+          onPersist={handlePersist}
+          listLibrary={fetchLayers}
+          onLoadLibrary={handleLoadLibrary}
+          onDeleteLibrary={handleDeleteLibrary}
         />
-        <ChatPanel onResult={handleResult}
-          sessionId={currentSessionId} onEnsureSession={ensureSession} />
-        {mapOpened && (
-          <MapPanel
-            layers={layers}
-            onToggle={(id) =>
-              setLayers((ls) => ls.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l)))
-            }
-            onRemove={(id) => setLayers((ls) => ls.filter((l) => l.id !== id))}
-            onStyle={handleStyle}
-            onPersist={handlePersist}
-            listLibrary={fetchLayers}
-            onLoadLibrary={handleLoadLibrary}
-            onDeleteLibrary={handleDeleteLibrary}
-          />
-        )}
-      </div>
-      {view === "settings" && <SettingsPanel />}
+      )}
     </div>
   );
 }

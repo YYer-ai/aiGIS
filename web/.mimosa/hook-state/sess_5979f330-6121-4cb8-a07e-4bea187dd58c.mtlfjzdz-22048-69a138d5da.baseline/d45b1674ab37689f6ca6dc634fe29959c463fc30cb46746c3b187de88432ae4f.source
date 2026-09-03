@@ -90,50 +90,6 @@ export async function saveLayer({ name, label, geojson }) {
   }).catch(() => { throw new Error(SVC_MSG); }), "图层保存失败");
 }
 
-// ---------- 模型配置（运维界面） ----------
-
-export async function fetchSettings() {
-  return reqJson(await fetch("/api/settings").catch(() => { throw new Error(SVC_MSG); }),
-    "配置读取失败");
-}
-
-export async function saveLLMSettings(patch) {
-  return reqJson(await fetch("/api/settings/llm", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(patch),
-  }).catch(() => { throw new Error(SVC_MSG); }), "运行参数保存失败");
-}
-
-/** p: {id?, name, base_url, api_key?, model, verify?}——verify=true 后端先验证再保存 */
-export async function saveProvider(p) {
-  return reqJson(await fetch("/api/providers", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(p),
-  }).catch(() => { throw new Error(SVC_MSG); }), "供应商保存失败");
-}
-
-/** 即时验证（不落盘）：传 {id} 按存档明文验证，或传 {base_url, api_key, model} */
-export async function verifyProvider(v) {
-  return reqJson(await fetch("/api/providers/verify", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(v),
-  }).catch(() => { throw new Error(SVC_MSG); }), "验证请求失败");
-}
-
-export async function activateProvider(id) {
-  return reqJson(
-    await fetch(`/api/providers/${encodeURIComponent(id)}/activate`, { method: "POST" })
-      .catch(() => { throw new Error(SVC_MSG); }),
-    "供应商激活失败");
-}
-
-export async function deleteProviderApi(id) {
-  return reqJson(
-    await fetch(`/api/providers/${encodeURIComponent(id)}`, { method: "DELETE" })
-      .catch(() => { throw new Error(SVC_MSG); }),
-    "供应商删除失败");
-}
-
 // 解析单个 SSE 帧（event:/data: 行），data 行 JSON.parse；解析失败静默跳帧不炸
 function dispatchFrame(frame, h) {
   let event = "message";

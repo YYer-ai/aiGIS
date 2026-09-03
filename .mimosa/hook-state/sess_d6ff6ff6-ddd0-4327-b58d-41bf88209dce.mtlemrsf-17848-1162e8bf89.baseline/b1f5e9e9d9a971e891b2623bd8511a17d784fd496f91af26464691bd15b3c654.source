@@ -15,28 +15,6 @@ class SaveLayerRequest(BaseModel):
     label: str = ""    # 中文图层名，缺省回落到 name
     geojson: dict      # 前端临时图层的 FeatureCollection
 
-class ProviderRequest(BaseModel):
-    name: str                    # 供应商显示名（如"生产-Qwen"）
-    base_url: str
-    api_key: str = ""            # 掩码（***xxxx）或空 = 沿用原值；明文覆盖
-    model: str
-    verify: bool = False         # True：保存前先验证连接，失败不落盘
-    id: str | None = None        # 带值为更新，缺省新增
-
-class VerifyRequest(BaseModel):
-    base_url: str = ""
-    api_key: str = ""
-    model: str = ""
-    id: str | None = None  # 已存供应商按 id 验证（后端取库内明文，前端只见脱敏）
-
-class LLMSettingsRequest(BaseModel):
-    # config.toml [llm]/[session] 段；全部可选，未传键不改动
-    thinking: str | None = None        # off/low/medium/high
-    temperature: float | None = None
-    timeout_seconds: float | None = None
-    history_rounds: int | None = None
-    history_char_limit: int | None = None
-
 class QueryResponse(BaseModel):
     sql: str = ""
     reasoning: str = ""

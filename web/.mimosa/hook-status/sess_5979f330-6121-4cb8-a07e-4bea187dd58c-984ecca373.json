@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "mimosa-hook-status/v1",
+  "recordedAt": "2026-09-03T11:04:59.185Z",
+  "sessionId": "sess_5979f330-6121-4cb8-a07e-4bea187dd58c",
+  "event": "PostToolUse",
+  "toolName": "Edit",
+  "file": "src/MapPanel.jsx",
+  "outcome": "clear",
+  "coverage": "complete",
+  "findingCount": 0,
+  "durationMs": 38,
+  "hostState": "hook_complete",
+  "reportHint": ".mimosa/reports/"
+}

@@ -14,10 +14,8 @@ from aigis.make import (drop_maker_layer, run_make_task, save_geojson_layer,
                         valid_layer_name)
 from aigis.repair import run_query, run_query_stream
 from aigis_web import store
-from aigis_web import settings_store
-from aigis_web.schemas import (LLMSettingsRequest, ProviderRequest,
-                                QueryRequest, QueryResponse, SaveLayerRequest,
-                                SessionCreate, SessionRename, VerifyRequest)
+from aigis_web.schemas import (QueryRequest, QueryResponse, SaveLayerRequest,
+                                SessionCreate, SessionRename)
 import psycopg
 
 # 意图路由（spec §4）：命中制作关键词 → 转制作流；不引入 LLM 分类（YAGNI）
@@ -47,7 +45,8 @@ def _summary_sample(rows) -> list[list[str]]:
 
 
 # ---------- 混合记忆（会话上下文：摘要前缀 + 最近 N 轮完整对话） ----------
-# 轮数/单条截断长度来自 config.toml [session] 段（模型配置界面可调）
+
+RECENT_N = 3  # 完整保留最近 N 轮（user+assistant 各一条，即 N*2 条消息）
 
 
 def _record(sid: str | None, role: str, content: str, meta: dict | None = None) -> None:
@@ -60,17 +59,17 @@ def _record(sid: str | None, role: str, content: str, meta: dict | None = None) 
         pass
 
 
-def _history_line(m: dict, limit: int = 200) -> str:
+def _history_line(m: dict) -> str:
     """单条消息 → history 行；assistant 空 content 时回落 meta（图层/SQL）。"""
     if m["role"] == "user":
-        return f"用户：{m['content'][:limit]}"
+        return f"用户：{m['content'][:200]}"
     meta = m.get("meta") or {}
     if m["content"]:
-        text = m["content"][:limit]
+        text = m["content"][:200]
     elif meta.get("table_name"):
         text = f"已创建图层{meta['table_name']}"
     elif meta.get("sql"):
-        text = meta["sql"][:limit]
+        text = meta["sql"][:200]
     else:
         text = "已回复"
     return f"助手：{text}"
@@ -78,7 +77,7 @@ def _history_line(m: dict, limit: int = 200) -> str:
 
 def _merge_summary(sid: str, old_summary: str, msgs: list[dict], cfg: Config) -> str | None:
     """窗口外未摘要消息并入既有摘要（LLM 增量合并）；失败静默，下次请求再试。"""
-    dialog = "".join(f"{_history_line(m, cfg.history_char_limit)}\n" for m in msgs)
+    dialog = "".join(f"{_history_line(m)}\n" for m in msgs)
     try:
         merged = make_provider(cfg).generate(
             "你是会话摘要助手，输出精炼的中文摘要。",
@@ -103,12 +102,12 @@ def _build_history(sid: str, cfg: Config, allow_summary: bool) -> str | None:
     if session is None:
         return None
     pending = [m for m in store.get_messages(sid) if not m["summarized"]]
-    keep, outside = pending[-cfg.history_rounds * 2:], pending[:-cfg.history_rounds * 2]
+    keep, outside = pending[-RECENT_N * 2:], pending[:-RECENT_N * 2]
     summary = session["summary"]
     if allow_summary and len(outside) >= 4:
         summary = _merge_summary(sid, summary, outside, cfg) or summary
     parts = ([f"历史摘要：{summary}"] if summary else []) + \
-            [_history_line(m, cfg.history_char_limit) for m in keep]
+            [_history_line(m) for m in keep]
     return "\n".join(parts) if parts else None
 
 
@@ -289,80 +288,6 @@ def create_app() -> FastAPI:
         if not ok:
             return JSONResponse(status_code=500, content={"error": err})
         return {"deleted": name}
-
-    # ---------- 模型配置（运维界面）端点 ----------
-
-    def _settings_error(e: Exception, status: int = 404) -> JSONResponse:
-        return JSONResponse(status_code=status, content={"error": str(e)})
-
-    @app.get("/api/settings")
-    def settings_get():
-        """供应商列表（api_key 脱敏）+ 激活标记 + config.toml 运行参数 + .env 现值。"""
-        return {"providers": settings_store.list_providers(),
-                "active_id": settings_store.get_active_id(),
-                "llm": settings_store.read_llm_settings()}
-
-    @app.post("/api/settings/llm")
-    def settings_llm(req: LLMSettingsRequest):
-        """config.toml [llm]/[session] 段合并写入（未传键不动），下一请求即生效。"""
-        if req.thinking is not None and req.thinking not in settings_store.THINKING_LEVELS:
-            return JSONResponse(status_code=422, content={
-                "error": f"thinking 取值需为 {'/'.join(settings_store.THINKING_LEVELS)}"})
-        return settings_store.write_llm_settings(req.model_dump(exclude_none=True))
-
-    @app.post("/api/providers")
-    def provider_upsert(req: ProviderRequest):
-        name = req.name.strip()
-        if not name or not req.base_url.strip() or not req.model.strip():
-            return JSONResponse(status_code=422,
-                                content={"error": "名称 / Base URL / 模型不能为空"})
-        if req.verify:
-            plain = req.api_key if req.api_key and not req.api_key.startswith("***") else (
-                settings_store.get_provider_plain(req.id)["api_key"]
-                if req.id else "")
-            ok, msg = settings_store.verify_connection(
-                req.base_url.strip(), plain, req.model.strip())
-            if not ok:
-                return JSONResponse(status_code=400, content={
-                    "error": f"验证失败，未保存：{msg}"})
-        try:
-            return settings_store.upsert_provider(
-                req.id, name, req.base_url.strip(), req.api_key, req.model.strip())
-        except KeyError as e:
-            return _settings_error(e)
-
-    @app.post("/api/providers/verify")
-    def provider_verify(req: VerifyRequest):
-        """即时连接验证（不落盘）：带 id 按存档明文验证，否则按表单值验证。"""
-        if req.id:
-            try:
-                p = settings_store.get_provider_plain(req.id)
-            except KeyError as e:
-                return _settings_error(e)
-            ok, msg = settings_store.verify_connection(
-                p["base_url"], p["api_key"], p["model"])
-            return {"ok": ok, "message": msg}
-        if not req.base_url.strip() or not req.model.strip():
-            return JSONResponse(status_code=422,
-                                content={"error": "Base URL / 模型不能为空"})
-        ok, msg = settings_store.verify_connection(
-            req.base_url.strip(), req.api_key, req.model.strip())
-        return {"ok": ok, "message": msg}
-
-    @app.post("/api/providers/{pid}/activate")
-    def provider_activate(pid: str):
-        try:
-            return settings_store.activate_provider(pid)
-        except KeyError as e:
-            return _settings_error(e)
-
-    @app.delete("/api/providers/{pid}")
-    def provider_delete(pid: str):
-        try:
-            settings_store.delete_provider(pid)
-        except KeyError as e:
-            return _settings_error(e)
-        return {"deleted": pid}
 
     @app.get("/api/query/stream")
     def query_stream(q: str, session_id: str | None = None):

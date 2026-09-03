@@ -1,0 +1,384 @@
+{
+  "schema_version": "mimosa-task-review/v2",
+  "run_id": "20260903T112858272Z-25560-00d011cdfa26",
+  "run_status": "completed",
+  "errors": [],
+  "coverage": {
+    "schema_version": "mimosa-hook-coverage/v1",
+    "status": "complete",
+    "scope": "hook_observed_diff",
+    "baseline": {
+      "complete": true,
+      "captured_files": 45,
+      "candidate_limit": 5000,
+      "truncated": false,
+      "enumeration_error_count": 0,
+      "snapshot_error_count": 0,
+      "compensated_target_count": 10
+    },
+    "change_tracking": {
+      "touched_observed": 10,
+      "touched_retained": 10,
+      "truncated": false,
+      "bash_mutation": true,
+      "bash_discovered": 10,
+      "bash_discovery_limit": 80,
+      "bash_discovery_truncated": false
+    },
+    "candidates": {
+      "eligible_files": 10,
+      "selected_files": 10,
+      "limit": 20,
+      "truncated": false
+    },
+    "scanning": {
+      "required_files": 10,
+      "scanned_files": 10,
+      "skipped_files": 0,
+      "failed_files": 0,
+      "project_checks_required": 0,
+      "project_checks_completed": 0
+    },
+    "notification": {
+      "eligible_findings": 0,
+      "detailed_findings": 0,
+      "detail_limit": 3,
+      "truncated": false
+    },
+    "reason_counts": {},
+    "reasons": [],
+    "reasons_truncated": false
+  },
+  "generated_at": "2026-09-03T11:28:58.272Z",
+  "session_id": "sess_5979f330-6121-4cb8-a07e-4bea187dd58c",
+  "target": ".",
+  "revision": "4fd1b9d3a825bff41c9171ad95d9ca15faaf2269",
+  "rules_version": "unavailable",
+  "diff_hash": "94e050857844ef3bb45b4e0ef32b836fdf6b7d255f4b05a5466590da71c5b27b",
+  "diff": {
+    "algorithm": "sha256",
+    "changed_file_count": 10,
+    "changed_files": [
+      {
+        "file": "src/aigis_web/app.py",
+        "ranges": [
+          {
+            "start": 17,
+            "end": 20
+          },
+          {
+            "start": 50,
+            "end": 50
+          },
+          {
+            "start": 63,
+            "end": 63
+          },
+          {
+            "start": 66,
+            "end": 66
+          },
+          {
+            "start": 69,
+            "end": 69
+          },
+          {
+            "start": 73,
+            "end": 73
+          },
+          {
+            "start": 81,
+            "end": 81
+          },
+          {
+            "start": 106,
+            "end": 106
+          },
+          {
+            "start": 111,
+            "end": 111
+          },
+          {
+            "start": 293,
+            "end": 366
+          }
+        ],
+        "before_hash": "467f16c437860ef1d2a4217727c55e8238251cdd37b190ac2a2b374fc093ac41",
+        "after_hash": "d6ceae3e8fabb719b8402bb40bec2be94120de10f4be29e3d2f68d24453a82c7"
+      },
+      {
+        "file": "src/aigis_web/schemas.py",
+        "ranges": [
+          {
+            "start": 18,
+            "end": 39
+          }
+        ],
+        "before_hash": "5b7981dd88474974914de0147bd6314ea46a9a2d8a5567da394259cfca520693",
+        "after_hash": "afa9cbbb889406e4f6697020fffa22b3f3ecd0bc632aeaf239094ed7e0ecf45d"
+      },
+      {
+        "file": "src/aigis_web/settings_store.py",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 198
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "2948d0ecc070f81d1c03099d1d89c092bdcfeaece88566dd2d92bec8af25dd67"
+      },
+      {
+        "file": "src/aigis/config.py",
+        "ranges": [
+          {
+            "start": 4,
+            "end": 5
+          },
+          {
+            "start": 8,
+            "end": 31
+          },
+          {
+            "start": 46,
+            "end": 51
+          },
+          {
+            "start": 59,
+            "end": 59
+          },
+          {
+            "start": 71,
+            "end": 75
+          }
+        ],
+        "before_hash": "f32a17435278e0e94e8a2b5398df2d9fb7dfaebd4c62a4d2f757cc5c3dfa746f",
+        "after_hash": "d1c0097dab582be0b5dfb4120c8274d27cd982f5403d7acd6b7edfea0a0d41d6"
+      },
+      {
+        "file": "src/aigis/llm.py",
+        "ranges": [
+          {
+            "start": 19,
+            "end": 20
+          },
+          {
+            "start": 23,
+            "end": 27
+          },
+          {
+            "start": 33,
+            "end": 34
+          },
+          {
+            "start": 54,
+            "end": 55
+          },
+          {
+            "start": 78,
+            "end": 80
+          }
+        ],
+        "before_hash": "ccd208b616e54cd9f430081cddeba3876eb4773c93acc4703d0422b8fcf99b50",
+        "after_hash": "a2b2ccf879e022e1e8b6357cb1b5ba0a5d78848dc5e2f6bff21d981fa130e5d2"
+      },
+      {
+        "file": "tests/test_settings.py",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 130
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "c1dd524ca67c7b7755810b81e478aea3443f0aef122fe216ac48ec2c60fa17a0"
+      },
+      {
+        "file": "web/src/api.js",
+        "ranges": [
+          {
+            "start": 93,
+            "end": 136
+          }
+        ],
+        "before_hash": "214a5ef492b8f23feeec7449c49571b6ab2efe8e2e9371f143c938436a2497d7",
+        "after_hash": "c48e8af27ea2098f49605750e7f022e0e86b46dbd162762dbdd941da90d39799"
+      },
+      {
+        "file": "web/src/App.jsx",
+        "ranges": [
+          {
+            "start": 5,
+            "end": 5
+          },
+          {
+            "start": 125,
+            "end": 128
+          },
+          {
+            "start": 130,
+            "end": 150
+          },
+          {
+            "start": 152,
+            "end": 169
+          }
+        ],
+        "before_hash": "537327e3116f815062bd15445a11ff9f4688da0117ad146898a0721eb3b991cf",
+        "after_hash": "fe74d60923fc65e4eafdd633752b82db68a4a1144ccf723e0f3bf3e51f40bd0f"
+      },
+      {
+        "file": "web/src/MapPanel.jsx",
+        "ranges": [
+          {
+            "start": 4,
+            "end": 140
+          },
+          {
+            "start": 480,
+            "end": 488
+          },
+          {
+            "start": 504,
+            "end": 506
+          },
+          {
+            "start": 509,
+            "end": 509
+          },
+          {
+            "start": 512,
+            "end": 513
+          },
+          {
+            "start": 518,
+            "end": 518
+          },
+          {
+            "start": 521,
+            "end": 521
+          },
+          {
+            "start": 532,
+            "end": 533
+          },
+          {
+            "start": 538,
+            "end": 538
+          },
+          {
+            "start": 552,
+            "end": 577
+          },
+          {
+            "start": 580,
+            "end": 581
+          },
+          {
+            "start": 610,
+            "end": 610
+          },
+          {
+            "start": 617,
+            "end": 617
+          },
+          {
+            "start": 621,
+            "end": 621
+          },
+          {
+            "start": 655,
+            "end": 657
+          },
+          {
+            "start": 659,
+            "end": 667
+          },
+          {
+            "start": 674,
+            "end": 674
+          },
+          {
+            "start": 679,
+            "end": 679
+          },
+          {
+            "start": 704,
+            "end": 704
+          },
+          {
+            "start": 738,
+            "end": 741
+          },
+          {
+            "start": 749,
+            "end": 767
+          }
+        ],
+        "before_hash": "0093c9e43fea4241e747eaab5bf8ac724d82ba3d373878b61ad57b14a2a5b3b6",
+        "after_hash": "5537264e9f7554b28677f3507d9efa181aebe3ccf269aa5c130fa9fe460b3736"
+      },
+      {
+        "file": "web/src/SettingsPanel.jsx",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 277
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "d65c75a146d649e21b009c72e69cf6353a6f949943c47868d9d942bbe819977e"
+      }
+    ]
+  },
+  "timing": {
+    "started_at": "2026-09-03T11:28:55.420Z",
+    "completed_at": "2026-09-03T11:28:58.272Z",
+    "duration_ms": 2852,
+    "measurement": "hook_wall_clock"
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "model_calls": 0,
+    "measurement": "known-zero"
+  },
+  "telemetry": {
+    "schemaVersion": "mimosa-gate-telemetry/v1",
+    "profile": "gate",
+    "operation": "Stop",
+    "outcome": "complete",
+    "latencyMs": 2852,
+    "peakMemoryBytes": 133447680,
+    "memoryMeasurement": "max-observed-process-rss",
+    "scannedFiles": 10,
+    "cache": {
+      "hits": 0,
+      "misses": 0,
+      "measurement": "not-applicable"
+    },
+    "denyCount": 0,
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "total": 0,
+      "modelCalls": 0,
+      "measurement": "known-zero"
+    }
+  },
+  "finding_count": 0,
+  "rewake_finding_count": 0,
+  "evidence_boundary": {
+    "scan": "candidate",
+    "static_fix_verification": "observed_static_only",
+    "runtime_verification": "not_performed"
+  },
+  "finding_events": [],
+  "findings": [],
+  "artifacts": {
+    "immutable_report": ".mimosa/reports/task-review-sess_5979f330-6121-4cb8-a07e-4bea187dd58c-20260903T112858272Z-25560-00d011cdfa26.json",
+    "latest_report": ".mimosa/reports/task-review-sess_5979f330-6121-4cb8-a07e-4bea187dd58c.json",
+    "history_summary": ".mimosa/history/run-20260903T112858272Z-25560-00d011cdfa26.json"
+  }
+}
