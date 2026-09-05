@@ -28,6 +28,9 @@ class StubProvider:
         if "运动出行需求" in system:
             return json.dumps({"activity": "run", "region_kind": "none",
                                "region_name": None}, ensure_ascii=False)
+        if "居住选址需求" in system:
+            return json.dumps({"region_kind": "ring", "region_name": "五环",
+                               "priorities": ["shopping", "medical"]}, ensure_ascii=False)
         return "stub 总结文本。"
 
     def generate_stream(self, system: str, user: str):
@@ -78,6 +81,20 @@ def test_runride_end_to_end_real_db():
                 if f["properties"]["kind"] == "滨水绿道")
     assert line["geometry"]["type"] == "MultiLineString"
     assert "stub 总结" in out.answer
+
+
+@pytest.mark.integration
+def test_living_run_end_to_end_real_db():
+    from aigis.scenarios.living import run as living_run
+    out = living_run("想在五环内找生活方便的街区住", Config(), provider=StubProvider())
+    assert out.ok, out.error
+    assert out.scenario_type == "living"
+    hoods = out.cards[0]["hoods"]
+    assert 1 <= len(hoods) <= 12
+    scores = [h["score"] for h in hoods]
+    assert scores == sorted(scores, reverse=True)
+    assert all("shopping" in h and "medical" in h for h in hoods)
+    assert out.geojson["features"] and "stub 总结" in out.answer
 
 
 @pytest.mark.integration

@@ -183,6 +183,37 @@ def test_runride_build_output():
     assert "骑行" in title2
 
 
+# ---------- living ----------
+
+def test_living_normalize_and_score():
+    from aigis.scenarios.living import normalize_params as lv_params, score_hood
+    p = lv_params({"priorities": ["medical", "education"], "region_kind": "place",
+                   "region_name": "海淀"})
+    assert p["priorities"] == ["medical", "education"]
+    assert lv_params({})["priorities"] == ["shopping", "medical", "education", "leisure"]
+    assert lv_params({"region_kind": "place", "region_name": "北京"})["region_kind"] == "none"
+    rich = {"name": "A", "lng": 116.3, "lat": 39.9, "shopping": 30, "medical": 15,
+            "education": 30, "leisure": 8}
+    poor = {"name": "B", "lng": 116.4, "lat": 39.9, "shopping": 0, "medical": 0,
+            "education": 1, "leisure": 0}
+    assert score_hood(rich, ["shopping"]) > score_hood(poor, ["shopping"])
+    # 侧重维度权重放大：medical 侧重时医疗差距对总分影响更大
+    both_rich = dict(rich, name="C", shopping=0)
+    s_med = score_hood(both_rich, ["medical"]) - score_hood(dict(both_rich, medical=0), ["medical"])
+    assert s_med > 0
+
+
+def test_living_build_output():
+    from aigis.scenarios.living import build_output
+    hoods = [{"name": "中关村街道", "lng": 116.31, "lat": 39.98, "score": 88.0,
+              "shopping": 30, "medical": 15, "education": 30, "leisure": 8}]
+    geojson, cards, title = build_output(
+        hoods, {"priorities": ["shopping", "medical", "education", "leisure"]})
+    assert cards[0]["type"] == "living" and cards[0]["hoods"][0]["score"] == 88.0
+    assert geojson["features"][0]["properties"]["name"] == "中关村街道"
+    assert "宜居街区" in title
+
+
 # ---------- 路由与 Web 接入 ----------
 
 def test_match_scenario_routing():
@@ -191,10 +222,11 @@ def test_match_scenario_routing():
     assert match_scenario("三环内有多少个公园") is None
     assert match_scenario("想找个地方露营") is not None
     assert match_scenario("推荐几条适合跑步的绿道").id == "runride"
+    assert match_scenario("我想搬家，哪里生活便利").id == "living"
 
 
 def test_registry_complete():
-    assert set(REGISTRY) == {"trip", "camping", "runride"}
+    assert set(REGISTRY) == {"trip", "camping", "runride", "living"}
     for s in REGISTRY.values():
         assert callable(s.run) and s.keywords
 

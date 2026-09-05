@@ -176,6 +176,19 @@ function ScenarioCard({ res, answer }) {
           )}
         </>
       )}
+      {card.type === "living" && (
+        <ol className="scn-sites">
+          {card.hoods?.map((h, i) => (
+            <li key={i}>
+              <span className="scn-site-score">{h.score}</span>
+              <span className="scn-spot-name">{h.name}</span>
+              <span className="scn-site-factors">
+                购物 {h.shopping} · 医疗 {h.medical} · 教育 {h.education} · 公园 {h.leisure}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
       <div className="msg-meta">场景规划完成 · {res.row_count} 个地图要素</div>
     </div>
   );
