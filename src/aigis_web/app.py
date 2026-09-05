@@ -13,6 +13,7 @@ from aigis.llm import LLMError, make_provider, summarize
 from aigis.make import (drop_maker_layer, run_make_task, save_geojson_layer,
                         valid_layer_name)
 from aigis.repair import run_query, run_query_stream
+from aigis.scenarios import match_scenario
 from aigis_web import store
 from aigis_web import settings_store
 from aigis_web.schemas import (LLMSettingsRequest, ProviderRequest,
@@ -20,7 +21,8 @@ from aigis_web.schemas import (LLMSettingsRequest, ProviderRequest,
                                 SessionCreate, SessionRename, VerifyRequest)
 import psycopg
 
-# 意图路由（spec §4）：命中制作关键词 → 转制作流；不引入 LLM 分类（YAGNI）
+# 意图路由（spec §4）：命中制作关键词 → 转制作流；命中场景关键词 → 场景规划流；
+# 其余走查询流。均不引入 LLM 分类（YAGNI），场景正则见 aigis.scenarios 各模块
 # "新建.{0,6}图层"：放宽到"新建一个/新建一个XX图层"类间隔表述（M4 疑虑 1）
 _MAKE_INTENT_RE = re.compile(
     r"做成|生成.{0,6}图层|保存为图层|新建.{0,6}图层|缓冲.{0,8}图层|叠加.{0,4}图层|合并.{0,6}图层")
@@ -460,10 +462,50 @@ def create_app() -> FastAPI:
                 finally:
                     events.put(None)
 
+            def scenario_worker(scenario):
+                try:
+                    cfg = load_config()
+                    out = scenario.run(question, cfg, history=history,
+                                       on_delta=lambda t: events.put(("delta", {"text": t})),
+                                       on_status=lambda s: events.put(("status", {"stage": s})))
+                    if not out.ok:
+                        record(out.error)
+                        events.put(("error", {"error": (
+                            f"{out.error}\n场景规划未成功；若想查询数据而非规划，"
+                            "请改用查询表述（如「三环内有多少公园」）重新提问")}))
+                        return
+                    resp = QueryResponse(ok=True, row_count=out.row_count, geojson=out.geojson,
+                                         answer=out.answer,
+                                         scenario={"type": out.scenario_type,
+                                                   "title": out.title, "cards": out.cards},
+                                         layer_style=out.layer_style)
+                    record(out.answer, {"scenario": resp.scenario, "row_count": out.row_count,
+                                        "layer_style": out.layer_style})
+                    events.put(("result", resp.model_dump()))
+                except LLMError as e:
+                    record(str(e))
+                    events.put(("error", {"error": str(e)}))
+                except psycopg.OperationalError as e:
+                    record(_db_error_message(e))
+                    events.put(("error", {"error": _db_error_message(e)}))
+                except Exception as e:
+                    record(f"内部错误：{e}")
+                    events.put(("error", {"error": f"内部错误：{e}"}))
+                finally:
+                    events.put(None)
+
             is_make = _MAKE_INTENT_RE.search(question) is not None
-            threading.Thread(target=make_worker if is_make else query_worker,
-                             daemon=True).start()
-            yield sse("status", {"stage": "理解制作需求" if is_make else "理解问题"})
+            scenario = None if is_make else match_scenario(question)
+            if is_make:
+                worker = make_worker
+            elif scenario is not None:
+                worker = lambda: scenario_worker(scenario)  # noqa: E731 闭包绑定当前场景
+            else:
+                worker = query_worker
+            first_stage = ("理解制作需求" if is_make
+                           else scenario.label if scenario is not None else "理解问题")
+            threading.Thread(target=worker, daemon=True).start()
+            yield sse("status", {"stage": first_stage})
             while True:
                 item = events.get()
                 if item is None:

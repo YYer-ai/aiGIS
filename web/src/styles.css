@@ -1385,3 +1385,111 @@ html, body, #root {
   outline: none;
   border-color: #2f6fdb;
 }
+
+/* ---------- 场景规划卡片（行程/选址） ---------- */
+
+.scn-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #dfe3ea;
+  margin: 6px 0 8px;
+}
+
+.scn-days {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scn-day {
+  border: 1px solid #33363f;
+  border-left: 3px solid #6d7484;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #1b1d23;
+}
+
+/* 与地图分类设色前 5 色对应（MapPanel CATEGORICAL_10） */
+.scn-day-0 { border-left-color: #1f77b4; }
+.scn-day-1 { border-left-color: #ff7f0e; }
+.scn-day-2 { border-left-color: #2ca02c; }
+.scn-day-3 { border-left-color: #d62728; }
+.scn-day-4 { border-left-color: #9467bd; }
+
+.scn-day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 600;
+  font-size: 13px;
+  color: #e6e9ef;
+}
+
+.scn-day-km {
+  font-weight: 400;
+  font-size: 11px;
+  color: #8a8f9c;
+}
+
+.scn-spots {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.scn-spots li,
+.scn-sites li {
+  font-size: 12.5px;
+  color: #c9cdd6;
+  line-height: 1.45;
+}
+
+.scn-spot-name {
+  color: #e8eaf0;
+}
+
+.scn-spot-kind {
+  margin-left: 6px;
+  font-size: 11px;
+  color: #8a8f9c;
+}
+
+.scn-spot-next {
+  margin-left: 8px;
+  font-size: 11px;
+  color: #6d94c9;
+}
+
+.scn-sites {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scn-sites li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.scn-site-score {
+  min-width: 38px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffd479;
+  background: rgba(255, 193, 69, 0.12);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+.scn-site-factors {
+  font-size: 11px;
+  color: #8a8f9c;
+}

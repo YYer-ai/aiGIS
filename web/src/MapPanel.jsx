@@ -42,7 +42,8 @@ const BASEMAPS = [
     preview: "linear-gradient(135deg,#22401f,#33562a 55%,#14304f)",
     attribution: "© 高德" },
 ];
-const DEFAULT_BASEMAP = "voyager"; // WGS-84 且国内可达：数据与底图零偏移
+const DEFAULT_BASEMAP = "amap"; // 高德街道：国内可达免 key；CARTO 免费瓦片 2026-09 起要求
+// API key（无 key 大面积黑块水印），数据叠加经 wgs2gcj 自动纠偏对齐
 const BASEMAP_STORAGE_KEY = "aigis:basemapId";
 
 // —— WGS-84 → GCJ-02（国测局加密坐标）公开近似算法：中国境内偏差 <2m，境外原样返回 ——

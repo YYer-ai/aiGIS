@@ -49,3 +49,5 @@ class QueryResponse(BaseModel):
     error: str = ""
     answer: str = ""  # 自然语言回答（LLM 总结失败时为模板文本，如"查询完成，共 N 行结果。"）
     chat_mode: bool = False  # AI 判定无需 SQL：answer 即直接回复，无行数据
+    scenario: dict | None = None  # 场景规划结果 {type,title,cards[,...]}（行程/选址等）
+    layer_style: dict | None = None  # 场景图层默认样式（classify/gradient/label）

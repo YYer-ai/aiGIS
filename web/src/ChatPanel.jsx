@@ -2,16 +2,20 @@ import React, { useEffect, useRef, useState } from "react";
 import { fetchMessages, streamQuery } from "./api.js";
 
 const EXAMPLES = [
+  "帮我规划北京2天的行程，喜欢历史和公园",
+  "推荐几个适合露营的地方",
   "三环内有多少个公园",
-  "距天安门广场2公里内有哪些餐厅",
-  "五环内面积最大的三个公园",
 ];
 
 // 终态结果呈现：默认 answer 文本 + 单值大数字卡片 + meta 一行；SQL/推理/多行表格收进"详情"折叠。
 // chat 模式（chat_mode=true，AI 直接回答不硬编 SQL）：只显示 answer 气泡（.msg-chat 与查询态区分），
 // 曾尝试的 SQL（失败降级前的遗留）以小字折叠保留；无 SQL 则无任何折叠
+// 场景结果（res.scenario）：行程/选址结构化卡片，geojson 已由地图承载
 function ResultBody({ res, answer }) {
   const [showDetail, setShowDetail] = useState(false);
+  if (res.scenario) {
+    return <ScenarioCard res={res} answer={answer} />;
+  }
   if (res.chat_mode) {
     return (
       <div className="msg-body">
@@ -88,11 +92,75 @@ function ResultBody({ res, answer }) {
   );
 }
 
+// 距离人性化：<1000m 显示米，否则一位小数公里
+const fmtM = (m) => (m == null ? "" : m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`);
+
+// 场景卡：itinerary=按天行程表；camping=选址推荐列表
+function ScenarioCard({ res, answer }) {
+  const sc = res.scenario;
+  const card = sc.cards?.[0] || {};
+  return (
+    <div className="msg-body">
+      {answer && <div className="msg-answer">{answer}</div>}
+      {sc.title && <div className="scn-title">{sc.title}</div>}
+      {card.type === "itinerary" && (
+        <div className="scn-days">
+          {card.days?.map((d) => (
+            <div key={d.day} className={`scn-day scn-day-${(d.day - 1) % 5}`}>
+              <div className="scn-day-head">
+                D{d.day}
+                {d.straight_km != null && (
+                  <span className="scn-day-km">全程直线约 {d.straight_km} km</span>
+                )}
+              </div>
+              <ol className="scn-spots">
+                {d.spots?.map((s) => (
+                  <li key={s.seq}>
+                    <span className="scn-spot-name">{s.name}</span>
+                    <span className="scn-spot-kind">{s.kind}</span>
+                    {s.next_m != null && (
+                      <span className="scn-spot-next">↓ {fmtM(s.next_m)}</span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+      )}
+      {card.type === "camping" && (
+        <ol className="scn-sites">
+          {card.sites?.map((s, i) => (
+            <li key={i}>
+              <span className="scn-site-score">{s.score}</span>
+              <span className="scn-spot-name">{s.name}</span>
+              <span className="scn-spot-kind">{s.kind}</span>
+              <span className="scn-site-factors">
+                {s.water_m != null && <>水 {fmtM(s.water_m)}</>}
+                {s.road_m != null && <> · 干道 {fmtM(s.road_m)}</>}
+                {s.trail_m != null && <> · 步道 {fmtM(s.trail_m)}</>}
+                {s.area_m2 != null && <> · {Math.round(s.area_m2 / 10000)} 公顷</>}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+      <div className="msg-meta">场景规划完成 · {res.row_count} 个地图要素</div>
+    </div>
+  );
+}
+
 // 后端持久化消息 → 前端消息形态：user 直取 content；assistant 由 content+meta
 // 还原可渲染 res（列/行明细未持久化，详情只保留 SQL，行数进 meta 行）
 function toRestored(m) {
   if (m.role === "user") return { role: "user", text: m.content };
   const meta = m.meta || {};
+  if (meta.scenario) {
+    // 场景消息：answer 文本 + 结构化卡片（地图图层不随会话恢复，与查询行为一致）
+    return { role: "assistant", res: { ok: true, answer: m.content,
+      scenario: meta.scenario, row_count: meta.row_count ?? 0,
+      columns: [], sample_rows: [] } };
+  }
   if (meta.chat_mode) {
     return { role: "assistant", res: { chat_mode: true, answer: m.content, sql: meta.sql } };
   }
@@ -108,7 +176,7 @@ function toRestored(m) {
 // 耗时分级提示：>30s 慢生成说明，>90s 升级建议停止并给"停止"按钮
 function StreamingMessage({ stage, sql, answer, elapsed, onStop }) {
   const summarizing = stage === "总结中" || Boolean(answer);
-  const chatThinking = sql && sql.trimStart().startsWith("{") && sql.includes("mode");
+  const chatThinking = sql && sql.trimStart().startsWith("{");
   return (
     <div className="msg-body">
       <div className="msg-stage">

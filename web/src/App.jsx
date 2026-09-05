@@ -66,6 +66,7 @@ export default function App() {
   // 查询成功且含几何要素时叠加为新图层（计数类无 geometry 由 ChatPanel 摘要展示，不加图层）；
   // make 流结果（columns=["layer_name","label"] 约定）已是持久图层直接标 ♻，
   // 并异步取全量 geojson（含属性列）替换 500 条采样，供分类设色/标注选择属性；
+  // 场景结果（res.scenario）带后端默认样式（行程按天分色/选址按评分渐变），图层名用场景标题；
   // 上限 10 层，超限静默截断最旧图层
   const handleResult = (res, question) => {
     if (!res.ok || !res.geojson?.features?.some((f) => f.geometry)) return;
@@ -79,8 +80,11 @@ export default function App() {
           layerName: res.sample_rows[0][0], style: null,
         }
       : {
-          id, name: question.slice(0, 12), geojson: res.geojson,
-          visible: true, persistent: false, style: null,
+          id,
+          name: res.scenario?.title?.slice(0, 14) || question.slice(0, 12),
+          geojson: res.geojson,
+          visible: true, persistent: false,
+          style: res.layer_style || null,
         };
     setLayers((prev) => [...prev, layer].slice(-10));
     if (isMake) {
