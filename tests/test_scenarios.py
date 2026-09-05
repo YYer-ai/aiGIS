@@ -223,6 +223,11 @@ def test_match_scenario_routing():
     assert match_scenario("想找个地方露营") is not None
     assert match_scenario("推荐几条适合跑步的绿道").id == "runride"
     assert match_scenario("我想搬家，哪里生活便利").id == "living"
+    # 路由优先级：具体场景词先于 trip 的泛化"规划…路线"正则
+    assert match_scenario("规划跑步路线").id == "runride"
+    assert match_scenario("帮我规划一条骑行路线").id == "runride"
+    assert match_scenario("规划露营行程").id == "camping"
+    assert match_scenario("帮我规划北京两天行程").id == "trip"
 
 
 def test_registry_complete():

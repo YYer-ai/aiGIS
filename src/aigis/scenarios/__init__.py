@@ -42,13 +42,15 @@ class Scenario:
 
 
 def _build_registry() -> dict[str, Scenario]:
-    # 延迟导入避免循环依赖（场景模块 import 本包的 Scenario/Outcome）
+    # 延迟导入避免循环依赖（场景模块 import 本包的 Scenario/Outcome）。
+    # 顺序即路由优先级：具体场景（露营/绿道/居住）在前，trip 的"规划…行程/路线"
+    # 正则最泛，放最后兜底——否则"规划跑步路线"会被 trip 抢走
     from aigis.scenarios import camping, living, runride, trip
     return {
-        "trip": Scenario("trip", "规划行程", trip.KEYWORDS, trip.run),
         "camping": Scenario("camping", "露营选址", camping.KEYWORDS, camping.run),
         "runride": Scenario("runride", "检索绿道", runride.KEYWORDS, runride.run),
         "living": Scenario("living", "评估街区", living.KEYWORDS, living.run),
+        "trip": Scenario("trip", "规划行程", trip.KEYWORDS, trip.run),
     }
 
 
