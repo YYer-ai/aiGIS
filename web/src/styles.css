@@ -1493,3 +1493,26 @@ html, body, #root {
   font-size: 11px;
   color: #8a8f9c;
 }
+
+.scn-sub {
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: #8a8f9c;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: baseline;
+}
+
+.scn-sub-label {
+  font-weight: 600;
+  color: #6d7484;
+}
+
+.scn-tag {
+  background: #232630;
+  border: 1px solid #33363f;
+  border-radius: 6px;
+  padding: 1px 7px;
+  color: #c9cdd6;
+}

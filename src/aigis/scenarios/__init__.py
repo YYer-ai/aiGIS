@@ -43,10 +43,11 @@ class Scenario:
 
 def _build_registry() -> dict[str, Scenario]:
     # 延迟导入避免循环依赖（场景模块 import 本包的 Scenario/Outcome）
-    from aigis.scenarios import camping, trip
+    from aigis.scenarios import camping, runride, trip
     return {
         "trip": Scenario("trip", "规划行程", trip.KEYWORDS, trip.run),
         "camping": Scenario("camping", "露营选址", camping.KEYWORDS, camping.run),
+        "runride": Scenario("runride", "检索绿道", runride.KEYWORDS, runride.run),
     }
 
 

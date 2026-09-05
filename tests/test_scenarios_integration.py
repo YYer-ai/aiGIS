@@ -25,6 +25,9 @@ class StubProvider:
             return json.dumps({"region_kind": "none", "region_name": None,
                                "near_water": True, "prefer": "auto"},
                               ensure_ascii=False)
+        if "运动出行需求" in system:
+            return json.dumps({"activity": "run", "region_kind": "none",
+                               "region_name": None}, ensure_ascii=False)
         return "stub 总结文本。"
 
     def generate_stream(self, system: str, user: str):
@@ -56,6 +59,25 @@ def test_trip_run_place_region_anchor():
     assert out.ok, out.error
     # 锚点解析走 place 分支（stub 固定 ring 四环，此测覆盖默认参数路径）
     assert out.geojson["features"]
+
+
+@pytest.mark.integration
+def test_runride_end_to_end_real_db():
+    from aigis.scenarios.runride import run as runride_run
+    out = runride_run("推荐适合跑步的绿道", Config(), provider=StubProvider())
+    assert out.ok, out.error
+    assert out.scenario_type == "runride"
+    card = out.cards[0]
+    assert card["trails"], "应聚合出滨水绿道"
+    assert all(t["km"] >= 3 for t in card["trails"])
+    kms = [t["km"] for t in card["trails"]]
+    assert kms == sorted(kms, reverse=True)
+    kinds = {f["properties"]["kind"] for f in out.geojson["features"]}
+    assert "滨水绿道" in kinds and "大公园" in kinds
+    line = next(f for f in out.geojson["features"]
+                if f["properties"]["kind"] == "滨水绿道")
+    assert line["geometry"]["type"] == "MultiLineString"
+    assert "stub 总结" in out.answer
 
 
 @pytest.mark.integration

@@ -155,6 +155,34 @@ def test_camp_normalize_params():
     assert camp_params({})["prefer"] == "auto"
 
 
+# ---------- runride ----------
+
+def test_runride_normalize_params():
+    from aigis.scenarios.runride import normalize_params as rr_params
+    p = rr_params({"activity": "ride", "region_kind": "place", "region_name": "温榆河"})
+    assert p == {"activity": "ride", "region_kind": "place", "region_name": "温榆河"}
+    assert rr_params({}) == {"activity": "run", "region_kind": "none", "region_name": ""}
+    assert rr_params({"region_kind": "place", "region_name": "北京"})["region_kind"] == "none"
+
+
+def test_runride_build_output():
+    from aigis.scenarios.runride import build_output
+    trails = [{"name": "清河沿岸", "km": 12.3, "segs": 40,
+               "geometry": '{"type":"MultiLineString","coordinates":[[[116.3,39.9],[116.31,39.91]]]}'}]
+    parks = [{"name": "奥森", "ha": 680,
+              "geometry": '{"type":"Point","coordinates":[116.39,40.01]}'}]
+    tracks = [{"name": "工体跑道", "geometry": '{"type":"Point","coordinates":[116.44,39.93]}'}]
+    geojson, cards, title = build_output(trails, parks, tracks,
+                                         {"activity": "run"})
+    kinds = [f["properties"]["kind"] for f in geojson["features"]]
+    assert kinds == ["滨水绿道", "大公园", "田径场"]
+    assert geojson["features"][0]["geometry"]["type"] == "MultiLineString"
+    assert "跑步" in title and "骑行" not in title
+    assert cards[0]["trails"][0]["km"] == 12.3
+    _, cards2, title2 = build_output(trails, parks, tracks, {"activity": "ride"})
+    assert "骑行" in title2
+
+
 # ---------- 路由与 Web 接入 ----------
 
 def test_match_scenario_routing():
@@ -162,10 +190,11 @@ def test_match_scenario_routing():
     assert match_scenario("推荐一个适合露营扎营的地方").id == "camping"
     assert match_scenario("三环内有多少个公园") is None
     assert match_scenario("想找个地方露营") is not None
+    assert match_scenario("推荐几条适合跑步的绿道").id == "runride"
 
 
 def test_registry_complete():
-    assert set(REGISTRY) == {"trip", "camping"}
+    assert set(REGISTRY) == {"trip", "camping", "runride"}
     for s in REGISTRY.values():
         assert callable(s.run) and s.keywords
 

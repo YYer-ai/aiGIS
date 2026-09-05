@@ -145,6 +145,37 @@ function ScenarioCard({ res, answer }) {
           ))}
         </ol>
       )}
+      {card.type === "runride" && (
+        <>
+          {card.trails?.length > 0 && (
+            <ol className="scn-sites">
+              {card.trails.map((t, i) => (
+                <li key={i}>
+                  <span className="scn-site-score">{t.km}km</span>
+                  <span className="scn-spot-name">{t.name}</span>
+                  <span className="scn-spot-kind">滨水绿道 · {t.segs} 段</span>
+                </li>
+              ))}
+            </ol>
+          )}
+          {card.parks?.length > 0 && (
+            <div className="scn-sub">
+              <span className="scn-sub-label">大公园</span>
+              {card.parks.map((p, i) => (
+                <span key={i} className="scn-tag">{p.name}（{p.ha} 公顷）</span>
+              ))}
+            </div>
+          )}
+          {card.tracks?.length > 0 && (
+            <div className="scn-sub">
+              <span className="scn-sub-label">田径场</span>
+              {card.tracks.map((t, i) => (
+                <span key={i} className="scn-tag">{t.name}</span>
+              ))}
+            </div>
+          )}
+        </>
+      )}
       <div className="msg-meta">场景规划完成 · {res.row_count} 个地图要素</div>
     </div>
   );
