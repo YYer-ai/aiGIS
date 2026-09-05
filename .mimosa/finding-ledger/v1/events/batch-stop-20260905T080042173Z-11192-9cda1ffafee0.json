@@ -1,0 +1,451 @@
+{
+  "schemaVersion": "mimosa-finding-ledger-batch/v1",
+  "batchId": "stop-20260905T080042173Z-11192-9cda1ffafee0",
+  "runId": "20260905T080042173Z-11192-9cda1ffafee0",
+  "runStatus": "inconclusive",
+  "coverage": {
+    "status": "partial",
+    "reasons": [
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/geo.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/__init__.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/extract.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/db.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/trip.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/camping.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis_web/schemas.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis_web/app.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "web/src/ChatPanel.jsx",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "web/src/App.jsx",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "tests/test_scenarios.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "tests/test_scenarios_integration.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "web/src/MapPanel.jsx",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/runride.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "scanner_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/living.py",
+        "detail": "spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/geo.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/__init__.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/extract.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/db.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/trip.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/camping.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis_web/schemas.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis_web/app.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "web/src/ChatPanel.jsx",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "web/src/App.jsx",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "tests/test_scenarios.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "tests/test_scenarios_integration.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "web/src/MapPanel.jsx",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/runride.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "scan",
+        "target": "src/aigis/scenarios/living.py",
+        "detail": "scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+        "affectsCompletion": true
+      }
+    ]
+  },
+  "source": {
+    "component": "zcode-hook",
+    "operationId": "Stop"
+  },
+  "revision": "e416570a1fef7c2c42c459f6f7db5bf738a32766",
+  "diffHash": "f4e3a6024de9e0ea9110413b8dd4a815398a5ba9a8a1c4653ccbe46fb25c5a85",
+  "rulesVersion": "unavailable",
+  "sessionHash": "a13e095fa8efde6d7f59cc11a907d0605b002fd9cf0b184b1c97806db3040f97",
+  "reportRef": ".mimosa/reports/task-review-sess_aad2d5cf-13f2-4cda-b6b6-54fa64dbd556-20260905T080042173Z-11192-9cda1ffafee0.json",
+  "events": [
+    {
+      "eventId": "hook-6a1af199d958a86d3143a512dd58f14f",
+      "findingId": "mimosa-a0d43144e5f92a38c7ec62b3",
+      "type": "finding_observed",
+      "at": "2026-09-05T07:03:06.871Z",
+      "identity": {
+        "projectRelativeFile": "src/aigis/scenarios/geo.py",
+        "ruleId": "security",
+        "codeEvidenceHash": "622d67db03038ea20d0f0bb132cb295ec48cd8d8b8027953c2b25e3e383bf71c",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 44,
+      "endLine": 44,
+      "reasonCode": "advisory",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "622d67db03038ea20d0f0bb132cb295ec48cd8d8b8027953c2b25e3e383bf71c"
+      },
+      "sequence": 0
+    },
+    {
+      "eventId": "hook-b3d294e6dc32f82a406723d92d29cc04",
+      "findingId": "mimosa-85e50b6362349545f72638b2",
+      "type": "finding_blocked",
+      "at": "2026-09-05T07:04:35.127Z",
+      "identity": {
+        "projectRelativeFile": "src/aigis/scenarios/db.py",
+        "ruleId": "security",
+        "codeEvidenceHash": "dacc860d8dcb459286aed4f729f2d70a2224f2cc0b11fee633cde99c25f7b5dc",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 25,
+      "endLine": 25,
+      "reasonCode": "deny",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "dacc860d8dcb459286aed4f729f2d70a2224f2cc0b11fee633cde99c25f7b5dc"
+      },
+      "sequence": 1
+    },
+    {
+      "eventId": "hook-d4738822163898a01e144b1b1ef0fecf",
+      "findingId": "mimosa-85e50b6362349545f72638b2",
+      "type": "static_fix_verified",
+      "at": "2026-09-05T07:05:03.274Z",
+      "identity": {
+        "projectRelativeFile": "src/aigis/scenarios/db.py",
+        "ruleId": "security",
+        "codeEvidenceHash": "dacc860d8dcb459286aed4f729f2d70a2224f2cc0b11fee633cde99c25f7b5dc",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 25,
+      "endLine": 25,
+      "reasonCode": "static_rescan_passed",
+      "reportedToAgent": false,
+      "evidence": {
+        "kind": "static_scan",
+        "boundary": "observed",
+        "producer": "deterministic",
+        "evidenceHash": "dacc860d8dcb459286aed4f729f2d70a2224f2cc0b11fee633cde99c25f7b5dc"
+      },
+      "sequence": 2
+    },
+    {
+      "eventId": "hook-3b83a44724de299e333e9a329d5b66b1",
+      "findingId": "mimosa-c164c178d06ed023a5763842",
+      "type": "finding_blocked",
+      "at": "2026-09-05T07:06:55.371Z",
+      "identity": {
+        "projectRelativeFile": "src/aigis/scenarios/trip.py",
+        "ruleId": "security",
+        "codeEvidenceHash": "9327bf04d4cab9b5f6347bf932974ba8eddbe7f685a91ac7a3f4de076a43c998",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 204,
+      "endLine": 204,
+      "reasonCode": "deny",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "9327bf04d4cab9b5f6347bf932974ba8eddbe7f685a91ac7a3f4de076a43c998"
+      },
+      "sequence": 3
+    },
+    {
+      "eventId": "hook-0089ba756831a60b799c982c6fbf021c",
+      "findingId": "mimosa-cff9626648cc002a561e732f",
+      "type": "finding_blocked",
+      "at": "2026-09-05T07:08:00.909Z",
+      "identity": {
+        "projectRelativeFile": "src/aigis/scenarios/trip.py",
+        "ruleId": "security",
+        "codeEvidenceHash": "20c8c655dfcb531195ce7958065eae4186de94bf68559e45beb1f644583bc5a0",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 215,
+      "endLine": 215,
+      "reasonCode": "deny",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "20c8c655dfcb531195ce7958065eae4186de94bf68559e45beb1f644583bc5a0"
+      },
+      "sequence": 4
+    },
+    {
+      "eventId": "hook-5ee1eda5348d43dccb18a82a503c2e8c",
+      "findingId": "mimosa-c164c178d06ed023a5763842",
+      "type": "static_fix_verified",
+      "at": "2026-09-05T07:09:18.596Z",
+      "identity": {
+        "projectRelativeFile": "src/aigis/scenarios/trip.py",
+        "ruleId": "security",
+        "codeEvidenceHash": "9327bf04d4cab9b5f6347bf932974ba8eddbe7f685a91ac7a3f4de076a43c998",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 204,
+      "endLine": 204,
+      "reasonCode": "static_rescan_passed",
+      "reportedToAgent": false,
+      "evidence": {
+        "kind": "static_scan",
+        "boundary": "observed",
+        "producer": "deterministic",
+        "evidenceHash": "9327bf04d4cab9b5f6347bf932974ba8eddbe7f685a91ac7a3f4de076a43c998"
+      },
+      "sequence": 5
+    },
+    {
+      "eventId": "hook-55f597929cc582a41c6f8b3d49e6ef35",
+      "findingId": "mimosa-cff9626648cc002a561e732f",
+      "type": "static_fix_verified",
+      "at": "2026-09-05T07:09:18.596Z",
+      "identity": {
+        "projectRelativeFile": "src/aigis/scenarios/trip.py",
+        "ruleId": "security",
+        "codeEvidenceHash": "20c8c655dfcb531195ce7958065eae4186de94bf68559e45beb1f644583bc5a0",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 215,
+      "endLine": 215,
+      "reasonCode": "static_rescan_passed",
+      "reportedToAgent": false,
+      "evidence": {
+        "kind": "static_scan",
+        "boundary": "observed",
+        "producer": "deterministic",
+        "evidenceHash": "20c8c655dfcb531195ce7958065eae4186de94bf68559e45beb1f644583bc5a0"
+      },
+      "sequence": 6
+    },
+    {
+      "eventId": "hook-bc8c48234632b396874d9cd86b241cef",
+      "findingId": "mimosa-1d916394f2146d733ba1cab9",
+      "type": "finding_blocked",
+      "at": "2026-09-05T07:41:05.990Z",
+      "identity": {
+        "projectRelativeFile": "src/aigis/scenarios/runride.py",
+        "ruleId": "security",
+        "codeEvidenceHash": "71a5bca01cb5966f6b6459c0773fc41f5a8a2a5c385c678eb6c247a0ce605d7a",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 86,
+      "endLine": 86,
+      "reasonCode": "deny",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "71a5bca01cb5966f6b6459c0773fc41f5a8a2a5c385c678eb6c247a0ce605d7a"
+      },
+      "sequence": 7
+    },
+    {
+      "eventId": "hook-ac164812f5ef90781d9c8f8ade77900f",
+      "findingId": "mimosa-1d916394f2146d733ba1cab9",
+      "type": "static_fix_verified",
+      "at": "2026-09-05T07:41:54.105Z",
+      "identity": {
+        "projectRelativeFile": "src/aigis/scenarios/runride.py",
+        "ruleId": "security",
+        "codeEvidenceHash": "71a5bca01cb5966f6b6459c0773fc41f5a8a2a5c385c678eb6c247a0ce605d7a",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 86,
+      "endLine": 86,
+      "reasonCode": "static_rescan_passed",
+      "reportedToAgent": false,
+      "evidence": {
+        "kind": "static_scan",
+        "boundary": "observed",
+        "producer": "deterministic",
+        "evidenceHash": "71a5bca01cb5966f6b6459c0773fc41f5a8a2a5c385c678eb6c247a0ce605d7a"
+      },
+      "sequence": 8
+    }
+  ],
+  "observedFindingIds": [],
+  "verifiedFiles": [],
+  "recordedAt": "2026-09-05T08:00:42.945Z"
+}

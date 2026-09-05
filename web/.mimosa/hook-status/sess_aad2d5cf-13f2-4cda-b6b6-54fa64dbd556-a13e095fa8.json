@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "mimosa-hook-status/v1",
+  "recordedAt": "2026-09-05T07:37:11.433Z",
+  "sessionId": "sess_aad2d5cf-13f2-4cda-b6b6-54fa64dbd556",
+  "event": "PostToolUse",
+  "toolName": "Edit",
+  "file": "E:/aiGIS/src/aigis/scenarios/camping.py",
+  "outcome": "inconclusive",
+  "coverage": "partial",
+  "findingCount": 0,
+  "durationMs": 19,
+  "hostState": "hook_complete",
+  "reportHint": ".mimosa/reports/"
+}

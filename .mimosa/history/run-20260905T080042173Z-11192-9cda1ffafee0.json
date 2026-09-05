@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "mimosa-finding-history/v1",
+  "runId": "20260905T080042173Z-11192-9cda1ffafee0",
+  "runStatus": "inconclusive",
+  "errors": [
+    "scan:src/aigis/scenarios/geo.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/scenarios/__init__.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/scenarios/extract.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/scenarios/db.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/scenarios/trip.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/scenarios/camping.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis_web/schemas.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis_web/app.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:web/src/ChatPanel.jsx: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:web/src/App.jsx: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_scenarios.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:tests/test_scenarios_integration.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:web/src/MapPanel.jsx: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/scenarios/runride.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT",
+    "scan:src/aigis/scenarios/living.py: scanner_failed: spawnSync E:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+  ],
+  "target": ".",
+  "revision": "e416570a1fef7c2c42c459f6f7db5bf738a32766",
+  "diffHash": "f4e3a6024de9e0ea9110413b8dd4a815398a5ba9a8a1c4653ccbe46fb25c5a85",
+  "rulesVersion": "unavailable",
+  "recordedAt": "2026-09-05T08:00:42.173Z",
+  "timing": {
+    "startedAt": "2026-09-05T08:00:39.177Z",
+    "completedAt": "2026-09-05T08:00:42.173Z",
+    "durationMs": 2996
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "modelCalls": 0,
+    "measurement": "known-zero"
+  },
+  "findings": {
+    "total": 5,
+    "bySeverity": {
+      "low": 1,
+      "high": 4
+    },
+    "byStatus": {
+      "candidate": 1,
+      "static_verified": 4
+    }
+  },
+  "coverage": {
+    "status": "partial",
+    "reasonCounts": {
+      "scanner_failed": 15,
+      "project_check_failed": 15
+    }
+  },
+  "evidenceBoundary": "static_only",
+  "immutableReport": ".mimosa/reports/task-review-sess_aad2d5cf-13f2-4cda-b6b6-54fa64dbd556-20260905T080042173Z-11192-9cda1ffafee0.json"
+}

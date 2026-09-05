@@ -1,0 +1,37 @@
+INFO:     Started server process [1760]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:57911 - "GET /api/query/stream?q=%E6%88%91%E6%83%B3%E6%90%AC%E5%AE%B6%EF%BC%8C%E6%8E%A8%E8%8D%90%E4%BA%94%E7%8E%AF%E5%86%85%E7%94%9F%E6%B4%BB%E4%BE%BF%E5%88%A9%E7%9A%84%E8%A1%97%E5%8C%BA%EF%BC%8C%E6%9C%80%E7%9C%8B%E9%87%8D%E4%B9%B0%E8%8F%9C%E5%92%8C%E7%9C%8B%E7%97%85 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57925 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57925 - "GET /assets/index-GC7H_au3.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57926 - "GET /assets/index-DxxOlEGz.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57925 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57925 - "POST /api/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:57925 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57926 - "GET /api/query/stream?q=%E6%88%91%E6%83%B3%E6%90%AC%E5%AE%B6%EF%BC%8C%E6%8E%A8%E8%8D%90%E4%BA%94%E7%8E%AF%E5%86%85%E7%94%9F%E6%B4%BB%E4%BE%BF%E5%88%A9%E7%9A%84%E8%A1%97%E5%8C%BA&session_id=90e24b9c70f445b0af33cd0d01218d03 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57956 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58240 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58246 - "GET / HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:58246 - "GET /assets/index-GC7H_au3.js HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:58246 - "GET /assets/index-DxxOlEGz.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:58246 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58241 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58266 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58267 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58248 - "GET /api/sessions/90e24b9c70f445b0af33cd0d01218d03/messages HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58278 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58284 - "POST /api/layers/save HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58284 - "GET /api/layers/scen_probe1/geojson HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58284 - "DELETE /api/layers/scen_probe1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58279 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58300 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58619 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58627 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58627 - "GET /assets/index-GC7H_au3.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58628 - "GET /assets/index-DxxOlEGz.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58627 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58627 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58627 - "POST /api/sessions HTTP/1.1" 201 Created
+INFO:     127.0.0.1:58627 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58628 - "GET /api/query/stream?q=%E5%B8%AE%E6%88%91%E8%A7%84%E5%88%92%E5%8C%97%E4%BA%AC2%E5%A4%A9%E7%9A%84%E8%A1%8C%E7%A8%8B%EF%BC%8C%E5%96%9C%E6%AC%A2%E5%8E%86%E5%8F%B2%E5%92%8C%E5%85%AC%E5%9B%AD&session_id=e47cb3a498694ee2a403d1ea6c3e8851 HTTP/1.1" 200 OK
